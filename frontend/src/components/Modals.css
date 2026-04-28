@@ -1,0 +1,343 @@
+/* ===== MODAL OVERLAY ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.emergency-overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-container {
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  max-width: 420px;
+  width: 90%;
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+}
+
+.animate-modal {
+  animation: modalEnter 0.4s ease;
+}
+
+/* ===== FALL DETECTION MODAL ===== */
+.fall-modal {
+  position: relative;
+}
+
+.fall-modal-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(135deg, #fecdd3, #fde2e4, #e8d5e0);
+  opacity: 0.6;
+}
+
+.fall-modal-content {
+  position: relative;
+  padding: 2rem 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.fall-warning-icon {
+  width: 64px;
+  height: 64px;
+  background: white;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 1rem;
+}
+
+.fall-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin-bottom: 0.375rem;
+}
+
+.fall-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+/* Countdown Ring */
+.countdown-ring {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.countdown-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(0deg);
+}
+
+.countdown-progress {
+  transition: stroke-dashoffset 1s linear;
+}
+
+.countdown-number {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fall-auto-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.fall-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 1.25rem;
+}
+
+.fall-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius-lg);
+}
+
+.fall-patient-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+  width: 100%;
+  justify-content: center;
+}
+
+.info-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.info-separator {
+  color: var(--border);
+}
+
+/* ===== EMERGENCY ALERT MODAL ===== */
+.emergency-modal {
+  text-align: center;
+  padding: 2.5rem 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, #fff5f5 0%, #ffffff 30%);
+}
+
+.emergency-icon-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1.25rem;
+}
+
+.emergency-icon-bg {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #fee2e2, #fecdd3);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.emergency-ripple-1,
+.emergency-ripple-2 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  border: 2px solid rgba(230, 57, 70, 0.2);
+  border-radius: 16px;
+  transform: translate(-50%, -50%);
+  animation: ripple 2s infinite;
+}
+
+.emergency-ripple-2 {
+  animation-delay: 1s;
+}
+
+.emergency-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.emergency-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.emergency-countdown-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.emergency-countdown-label {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+}
+
+.emergency-countdown-number {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.emergency-call-btn {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+  margin-bottom: 0.75rem;
+}
+
+.emergency-cancel-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
+  transition: var(--transition);
+}
+
+.emergency-cancel-btn:hover {
+  color: var(--text-primary);
+}
+
+.emergency-doctor {
+  width: 100%;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.doctor-status {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.online {
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.status-text {
+  font-size: 0.75rem;
+  color: var(--success);
+  font-weight: 500;
+}
+
+.doctor-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+}
+
+.doctor-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--health-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.doctor-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.doctor-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.doctor-specialty {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
