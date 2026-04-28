@@ -1,0 +1,839 @@
+/* ===== PARENT DEVICE LOGIN ===== */
+.pd-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a3c5e, #2a5a8a);
+  position: relative;
+  overflow: hidden;
+}
+
+.pd-login-bg { position: absolute; inset: 0; }
+
+.pd-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.2;
+}
+
+.pd-bg-1 { width: 400px; height: 400px; background: #e63946; top: -100px; right: -100px; }
+.pd-bg-2 { width: 300px; height: 300px; background: #10b981; bottom: -100px; left: -50px; }
+
+.pd-login-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 3rem 2.5rem;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: var(--shadow-xl);
+  position: relative;
+  z-index: 1;
+}
+
+.pd-logo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(26, 60, 94, 0.14);
+}
+
+.pd-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pd-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.25rem; }
+.pd-subtitle { color: var(--text-muted); font-size: 0.9375rem; margin-bottom: 2rem; }
+
+.pd-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 0.625rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  margin-bottom: 1rem;
+}
+
+.pd-form { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.pd-form label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.pd-code-input {
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.pd-code-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(26,60,94,0.1);
+  outline: none;
+}
+
+.pd-login-btn {
+  padding: 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.pd-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 1.5rem;
+}
+
+/* ===== PARENT DASHBOARD ===== */
+.pd-dashboard {
+  min-height: 100vh;
+  background: #f7f8fc;
+  max-width: 980px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+
+.pd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: white;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.pd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pd-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pd-language-control {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.pd-language-control select {
+  min-width: 118px;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pd-header-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(26, 60, 94, 0.12);
+}
+
+.pd-header-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pd-logout {
+  background: none;
+  border: 1px solid var(--border);
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.pd-welcome {
+  text-align: center;
+  padding: 1.35rem 1.25rem 0.5rem;
+}
+
+.pd-welcome-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: var(--health-gradient);
+  color: white;
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+}
+
+.pd-welcome h1 { font-size: 1.375rem; margin-bottom: 0.25rem; }
+.pd-welcome p { font-size: 0.8125rem; color: var(--text-muted); }
+
+.pd-sos-section {
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem 0 1rem;
+}
+
+.pd-sos-btn {
+  width: 132px;
+  height: 132px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: var(--transition);
+  box-shadow: 0 8px 30px rgba(230, 57, 70, 0.4);
+}
+
+.pd-sos-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 40px rgba(230, 57, 70, 0.5);
+}
+
+.pd-sos-btn:active { transform: scale(0.98); }
+
+.pd-sos-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(230, 57, 70, 0.4);
+  animation: ripple 2s infinite;
+}
+
+.pd-sos-text { font-size: 2.5rem; font-weight: 800; z-index: 1; }
+.pd-sos-sub { font-size: 0.6875rem; opacity: 0.8; z-index: 1; }
+
+.pd-reminder-board {
+  padding: 0 1.25rem 1.25rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.pd-main-reminder-card {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  padding: 1rem;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.pd-main-reminder-card span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.pd-main-reminder-card strong,
+.pd-reminder-tile strong {
+  font-size: 0.875rem;
+}
+
+.pd-main-reminder-card small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.pd-reminder-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--primary);
+  background: var(--info-bg);
+}
+
+.pd-reminder-icon.medicine {
+  color: var(--accent);
+  background: var(--danger-bg);
+}
+
+.pd-reminder-arrow {
+  color: var(--text-muted);
+  font-size: 1.5rem;
+}
+
+.pd-reminder-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.pd-reminder-tile {
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
+}
+
+.pd-tile-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.pd-reminder-tile.water .pd-tile-icon {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.pd-reminder-tile.food .pd-tile-icon {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.pd-voice-section {
+  padding: 0 1.25rem 1.25rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.pd-voice-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.pd-voice-controls select {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text-primary);
+}
+
+.pd-voice-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  box-shadow: var(--shadow-md);
+  text-align: left;
+  transition: var(--transition);
+}
+
+.pd-voice-button:hover {
+  transform: translateY(-2px);
+}
+
+.pd-voice-button.listening {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  animation: pulse 1.2s infinite;
+}
+
+.pd-voice-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.pd-voice-button span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-voice-button strong {
+  color: white;
+  font-size: 0.95rem;
+}
+
+.pd-voice-button small {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.75rem;
+}
+
+.pd-voice-status {
+  margin-top: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.pd-quick-voice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pd-quick-voice-grid button {
+  padding: 0.625rem;
+  border-radius: var(--radius-md);
+  background: white;
+  border: 1px solid var(--border-light);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.pd-voice-manual {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pd-voice-manual input {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.pd-voice-manual button {
+  padding: 0 1rem;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+}
+
+.pd-side-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.pd-side-panel {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.pd-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.pd-panel-header h2 {
+  font-size: 1rem;
+}
+
+.pd-score-pill {
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: var(--success-bg);
+  color: var(--success);
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.pd-panel-empty {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.pd-appointment-list,
+.pd-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.pd-appointment-card,
+.pd-activity-card {
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+}
+
+.pd-appointment-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pd-appointment-card strong,
+.pd-activity-card strong {
+  font-size: 0.875rem;
+}
+
+.pd-appointment-card span,
+.pd-appointment-card small,
+.pd-appointment-card p,
+.pd-activity-card small {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.pd-activity-form {
+  display: grid;
+  grid-template-columns: 1fr 72px auto;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pd-activity-form input {
+  min-width: 0;
+  padding: 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.pd-activity-form button,
+.pd-activity-card button {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+}
+
+.pd-activity-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pd-activity-card.active {
+  border-color: var(--info);
+  background: var(--info-bg);
+}
+
+.pd-activity-card.completed {
+  border-color: var(--success);
+  background: var(--success-bg);
+}
+
+.pd-activity-card > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-done-label {
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.pd-medicines-section {
+  padding: 0 1.25rem;
+  margin: 0 auto 1.5rem;
+  max-width: 500px;
+}
+
+.pd-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.pd-section-header h2 { font-size: 1rem; font-weight: 600; }
+
+.pd-order-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  animation: pulse 1.5s infinite;
+}
+
+.pd-order-success {
+  background: var(--success-bg);
+  color: var(--success);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.pd-no-meds {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.pd-med-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pd-med-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  background: white;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.pd-med-item:hover { border-color: var(--border); }
+
+.pd-med-item.selected {
+  border-color: var(--success);
+  background: var(--success-bg);
+}
+
+.pd-med-check { font-size: 1.125rem; }
+
+.pd-med-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.pd-med-info { flex: 1; display: flex; flex-direction: column; }
+.pd-med-name { font-size: 0.9375rem; font-weight: 600; }
+.pd-med-dose { font-size: 0.75rem; color: var(--text-muted); }
+
+.pd-med-hint {
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+}
+
+.pd-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0 1.25rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.pd-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.pd-action-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+.pd-action-icon { font-size: 1rem; font-weight: 800; }
+
+.pd-sos-overlay { background: rgba(0,0,0,0.7); }
+
+.pd-sos-modal {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+}
+
+.pd-sos-modal-icon { font-size: 3rem; margin-bottom: 0.75rem; font-weight: 900; color: var(--accent); }
+
+.pd-sos-modal h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.375rem;
+  color: var(--accent);
+}
+
+.pd-sos-modal > p { font-size: 0.8125rem; color: var(--text-muted); }
+
+.pd-sos-countdown-ring {
+  width: 110px;
+  height: 110px;
+  position: relative;
+  margin: 1.25rem auto;
+}
+
+.pd-sos-countdown-ring svg { width: 100%; height: 100%; }
+
+.pd-sos-countdown-number {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pd-sos-countdown-number span {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.pd-sos-countdown-number small {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.pd-sos-auto {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.pd-sos-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pd-sos-actions .btn { flex: 1; padding: 0.75rem; font-size: 0.9375rem; }
+
+.pd-sos-sent-icon { font-size: 3rem; margin-bottom: 1rem; font-weight: 900; color: var(--success); }
+
+.pd-reminder-overlay {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.pd-reminder-modal {
+  width: min(90%, 360px);
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+}
+
+.pd-reminder-modal-type {
+  display: inline-flex;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--info-bg);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 0.875rem;
+}
+
+.pd-reminder-modal h2 {
+  font-size: 1.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.pd-reminder-modal p {
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 760px) {
+  .pd-dashboard {
+    max-width: 500px;
+  }
+
+  .pd-header {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .pd-header-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .pd-side-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .pd-activity-form {
+    grid-template-columns: 1fr;
+  }
+}
