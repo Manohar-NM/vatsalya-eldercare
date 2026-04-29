@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vatsalya Demo</title>
+  <style>
+    :root {
+      --ink: #18202b;
+      --muted: #667085;
+      --line: #d9e2ec;
+      --paper: #ffffff;
+      --soft: #f4f7fb;
+      --brand: #176b87;
+      --green: #2a9d8f;
+      --red: #d94f30;
+      --yellow: #f0b84c;
+      --blue: #2f80ed;
+      --shadow: 0 16px 40px rgba(24, 32, 43, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #edf4f7;
+    }
+
+    .hero {
+      min-height: 360px;
+      color: #fff;
+      background:
+        linear-gradient(90deg, rgba(12, 47, 61, .92), rgba(23, 107, 135, .74)),
+        url("data:image/svg+xml,%3Csvg width='1280' height='520' viewBox='0 0 1280 520' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1280' height='520' fill='%23176b87'/%3E%3Ccircle cx='1010' cy='120' r='160' fill='%232a9d8f' opacity='.35'/%3E%3Ccircle cx='1120' cy='330' r='230' fill='%23f0b84c' opacity='.22'/%3E%3Cpath d='M730 420c55-155 126-232 213-232 91 0 157 63 198 190 22 68 71 111 146 129H730z' fill='%23fff' opacity='.16'/%3E%3Cpath d='M830 402c39-105 92-157 158-157 70 0 123 52 159 157' fill='none' stroke='%23fff' stroke-width='22' stroke-linecap='round' opacity='.45'/%3E%3Ccircle cx='986' cy='160' r='72' fill='%23fff' opacity='.25'/%3E%3C/svg%3E") center/cover;
+    }
+
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 26px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      align-items: center;
+      min-height: 310px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 48px; line-height: 1.02; letter-spacing: 0; max-width: 760px; }
+    h2 { font-size: 22px; margin-bottom: 14px; }
+    h3 { font-size: 15px; margin-bottom: 8px; }
+
+    .hero p {
+      margin-top: 16px;
+      max-width: 640px;
+      line-height: 1.6;
+      color: rgba(255,255,255,.86);
+    }
+
+    .status-card {
+      background: rgba(255,255,255,.96);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .status-row:last-child { border-bottom: 0; }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--yellow);
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    .dot.ok { background: var(--green); }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 16px;
+      background: var(--ink);
+      color: #fff;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 7px 18px rgba(24,32,43,.12);
+    }
+
+    button.secondary {
+      background: #e8f1f5;
+      color: #0f4c5c;
+      box-shadow: none;
+      border: 1px solid var(--line);
+    }
+
+    button.danger { background: var(--red); }
+    button.green { background: var(--green); }
+    button:disabled { opacity: .7; cursor: wait; }
+
+    main {
+      margin-top: -42px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .step-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e8f1f5;
+      color: var(--brand);
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .step.done .num { background: var(--green); color: #fff; }
+    .step.running .num { background: var(--yellow); color: #5a3a00; }
+
+    .step-title { font-weight: 900; font-size: 14px; }
+    .step-result { color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 3px; }
+
+    .showcase {
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .phone {
+      border: 3px solid #1f2937;
+      border-radius: 26px;
+      padding: 16px;
+      background: #fbfdff;
+      min-height: 560px;
+    }
+
+    .phone-head {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .code {
+      border: 1px dashed var(--brand);
+      background: #eaf6f8;
+      color: #0f4c5c;
+      border-radius: 8px;
+      padding: 12px;
+      font-weight: 900;
+      word-break: break-word;
+    }
+
+    .sos {
+      width: 100%;
+      min-height: 110px;
+      margin: 14px 0;
+      font-size: 34px;
+      background: var(--red);
+      border-radius: 16px;
+    }
+
+    .simple-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .simple-grid button {
+      min-height: 72px;
+      font-size: 16px;
+      box-shadow: none;
+    }
+
+    select, input {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 10px;
+      font: inherit;
+      background: #fff;
+      margin-bottom: 8px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: 950;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #eaf6f4;
+      color: #0f4c5c;
+      font-size: 12px;
+      font-weight: 900;
+      margin-top: 8px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .feed {
+      display: grid;
+      gap: 10px;
+      max-height: 430px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .event {
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--brand);
+      border-radius: 8px;
+      padding: 11px;
+      background: #fff;
+    }
+
+    .event.good { border-left-color: var(--green); }
+    .event.warn { border-left-color: var(--yellow); }
+    .event.danger { border-left-color: var(--red); }
+    .event.blue { border-left-color: var(--blue); }
+
+    .event-title {
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .event-body {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .chart {
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      height: 120px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .bar {
+      flex: 1;
+      min-height: 12px;
+      border-radius: 6px 6px 0 0;
+      background: var(--green);
+    }
+
+    .bar.yellow { background: var(--yellow); }
+    .bar.red { background: var(--red); }
+
+    @media (max-width: 1050px) {
+      .hero-grid, .grid, .showcase, .result-grid { grid-template-columns: 1fr; }
+      .metrics, .cards { grid-template-columns: repeat(2, 1fr); }
+      main { margin-top: 0; }
+      h1 { font-size: 36px; }
+    }
+
+    @media (max-width: 620px) {
+      .wrap { padding: 16px; }
+      .metrics, .cards { grid-template-columns: 1fr; }
+      .simple-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <h1>Vatsalya: Smart Elderly Care Demo</h1>
+        <p>A guided hackathon preview showing the zero-literacy parent device, caregiver dashboard, realtime SOS, offline fallback, voice relay, vitals, AI alerts, and healthcare actions.</p>
+        <div class="actions">
+          <button id="fullDemo">Start Guided Demo</button>
+          <button id="resetDemo" class="secondary">Reset Results</button>
+        </div>
+      </div>
+      <div class="status-card">
+        <h2>Demo Readiness</h2>
+        <div class="status-row"><span><span id="apiDot" class="dot"></span>Backend API</span><strong id="apiStatus">Checking</strong></div>
+        <div class="status-row"><span>Realtime Socket</span><strong id="socketStatus">Connecting</strong></div>
+        <div class="status-row"><span>Current Caregiver</span><strong id="caregiverId">Not created</strong></div>
+        <div class="status-row"><span>Active Parent Code</span><strong id="activeCodeMini">Not created</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <section class="grid">
+      <div class="panel">
+        <h2>Guided Demo Steps</h2>
+        <div id="steps" class="step-list"></div>
+      </div>
+
+      <div>
+        <section class="showcase">
+          <div class="panel">
+            <h2>Parent Device</h2>
+            <div class="phone">
+              <div class="phone-head">Zero-literacy connected device</div>
+              <div class="label">Parent activation code</div>
+              <div id="activeCode" class="code">Create a parent profile</div>
+              <button id="activateParent" class="green" style="width:100%;margin-top:10px;">Activate Device</button>
+              <button id="parentSos" class="sos">SOS</button>
+              <button id="offlineSos" class="danger" style="width:100%;margin-bottom:12px;">Offline SMS SOS</button>
+              <select id="language">
+                <option value="kn">Kannada</option><option value="hi">Hindi</option><option value="ta">Tamil</option>
+                <option value="te">Telugu</option><option value="ml">Malayalam</option><option value="mr">Marathi</option>
+                <option value="bn">Bengali</option><option value="gu">Gujarati</option><option value="pa">Punjabi</option>
+                <option value="or">Odia</option><option value="as">Assamese</option><option value="en">English</option>
+              </select>
+              <input id="voiceText" value="Nanage sahaya beku" />
+              <button id="sendVoice" style="width:100%;margin-bottom:12px;">Speak Request</button>
+              <div class="simple-grid">
+                <button id="medicineReminder" class="secondary">Medicine</button>
+                <button id="waterReminder" class="secondary">Water</button>
+                <button id="mealReminder" class="secondary">Meal</button>
+                <button id="languageButton" class="secondary">Language</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Caregiver Dashboard</h2>
+            <div class="metrics">
+              <div class="metric"><div class="label">Heart Rate</div><div id="hr" class="value">--</div></div>
+              <div class="metric"><div class="label">SpO2</div><div id="spo2" class="value">--</div></div>
+              <div class="metric"><div class="label">Activity</div><div id="activity" class="value">--</div></div>
+              <div class="metric"><div class="label">SOS Alerts</div><div id="sosCount" class="value">0</div></div>
+            </div>
+
+            <div id="parentCards" class="cards"></div>
+
+            <div class="actions">
+              <button id="createChild" class="secondary">Login Child</button>
+              <button id="createFather" class="secondary">Create Father</button>
+              <button id="createMother" class="secondary">Create Mother</button>
+              <button id="simulateVitals" class="secondary">Sync Vitals</button>
+              <button id="heartSpike" class="secondary">Heart Spike</button>
+              <button id="inactivity" class="secondary">Inactivity</button>
+              <button id="missedMedicine" class="secondary">Missed Medicine</button>
+              <button id="doctorBooking" class="secondary">Book Doctor</button>
+              <button id="medicineOrder" class="secondary">Order Medicine</button>
+              <button id="loadHistory" class="secondary">Load History</button>
+            </div>
+
+            <h3 style="margin-top:16px;">Health Analytics</h3>
+            <div id="chart" class="chart"></div>
+          </div>
+        </section>
+
+        <section class="result-grid">
+          <div class="panel">
+            <h2>Executed Results</h2>
+            <div id="results" class="feed"></div>
+          </div>
+          <div class="panel">
+            <h2>Alert History</h2>
+            <div id="history" class="feed"></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const state = {
+      childId: null,
+      token: null,
+      email: null,
+      password: "Pass1234",
+      parents: [],
+      activeParent: null,
+      sosCount: 0,
+      vitals: []
+    };
+
+    const demoSteps = [
+      ["child", "Child login", "Register/login caregiver with JWT"],
+      ["father", "Create father", "Generate unique parent code"],
+      ["mother", "Create mother", "Support multiple parent profiles"],
+      ["activate", "Activate parent device", "Parent enters code, no login"],
+      ["vitals", "Live vitals", "Mock HR, SpO2, movement synced"],
+      ["reminders", "Reminders", "Medicine, water, meal alerts"],
+      ["voice", "Voice relay", "Regional speech translated for caregiver"],
+      ["anomaly", "AI anomaly alerts", "Heart spike, inactivity, missed medicine"],
+      ["services", "Healthcare actions", "Practo and PharmEasy simulated"],
+      ["sos", "Online SOS", "Realtime Socket.io alert to child"],
+      ["offline", "Offline SOS", "2G SMS fallback simulation"],
+      ["history", "Alert history", "Past SOS records loaded"]
+    ];
+
+    const el = (id) => document.getElementById(id);
+    const results = el("results");
+    const history = el("history");
+    const steps = el("steps");
+
+    function initSteps() {
+      steps.innerHTML = demoSteps.map(([key, title, body], index) => `
+        <div id="step-${key}" class="step">
+          <div class="num">${index + 1}</div>
+          <div><div class="step-title">${title}</div><div class="step-result">${body}</div></div>
+        </div>
+      `).join("");
+    }
+
+    function markStep(key, status, result) {
+      const node = el(`step-${key}`);
+      if (!node) return;
+      node.classList.remove("done", "running");
+      node.classList.add(status);
+      if (result) node.querySelector(".step-result").textContent = result;
+    }
+
+    function event(title, body, type = "good") {
+      const node = document.createElement("div");
+      node.className = `event ${type}`;
+      node.innerHTML = `<div class="event-title">${title}</div><div class="event-body">${body}</div>`;
+      results.prepend(node);
+    }
+
+    function historyEvent(title, body, type = "danger") {
+      const node = document.createElement("div");
+      node.className = `event ${type}`;
+      node.innerHTML = `<div class="event-title">${title}</div><div class="event-body">${body}</div>`;
+      history.prepend(node);
+    }
+
+    function setBusy(button, busy, label = "Running...") {
+      if (!button) return;
+      button.disabled = busy;
+      if (busy) {
+        button.dataset.label = button.textContent;
+        button.textContent = label;
+      } else if (button.dataset.label) {
+        button.textContent = button.dataset.label;
+      }
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const type = response.headers.get("content-type") || "";
+      return type.includes("application/json") ? response.json() : response.text();
+    }
+
+    function authHeaders() {
+      return state.token ? { Authorization: `Bearer ${state.token}` } : {};
+    }
+
+    function renderParents() {
+      el("parentCards").innerHTML = state.parents.map((p) => `
+        <div class="card">
+          <h3>${p.name}</h3>
+          <div class="label">Age ${p.age}, ${p.location}</div>
+          <span class="pill">${p.uniqueCode}</span>
+        </div>
+      `).join("");
+      const code = state.activeParent?.uniqueCode || "Create a parent profile";
+      el("activeCode").textContent = code;
+      el("activeCodeMini").textContent = state.activeParent?.uniqueCode || "Not created";
+    }
+
+    function renderChart() {
+      const values = state.vitals.length ? state.vitals : [65, 72, 82, 76, 88, 79];
+      el("chart").innerHTML = values.slice(-8).map((v) => {
+        const cls = v > 105 ? "red" : v > 90 ? "yellow" : "";
+        return `<div class="bar ${cls}" style="height:${Math.min(v, 120) / 1.25}%"></div>`;
+      }).join("");
+    }
+
+    async function createChild() {
+      markStep("child", "running", "Creating caregiver account...");
+      const stamp = Date.now();
+      state.email = `caregiver.${stamp}@vatsalya.local`;
+      const user = await api("/api/users/register", {
+        method: "POST",
+        body: JSON.stringify({ name: "Demo Caregiver", age: 28, email: state.email, password: state.password })
+      });
+      const login = await api("/api/users/login", {
+        method: "POST",
+        body: JSON.stringify({ email: state.email, password: state.password })
+      });
+      state.childId = user.user._id;
+      state.token = login.token;
+      socket.emit("joinRoom", state.childId);
+      el("caregiverId").textContent = state.childId.slice(-8);
+      markStep("child", "done", `JWT login complete: ${state.childId}`);
+      event("Child logged in", `Caregiver dashboard opened. Child ID: ${state.childId}`, "blue");
+    }
+
+    async function createParent(name, age, location, stepKey) {
+      if (!state.childId) await createChild();
+      markStep(stepKey, "running", `Creating ${name.toLowerCase()} profile...`);
+      const parent = await api("/api/parents", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ name, age, location, childId: state.childId })
+      });
+      state.parents.push(parent);
+      state.activeParent = parent;
+      renderParents();
+      markStep(stepKey, "done", `${name} code: ${parent.uniqueCode}`);
+      event(`${name} profile created`, `Unique activation code generated: ${parent.uniqueCode}`, "good");
+      return parent;
+    }
+
+    async function activateParent() {
+      if (!state.activeParent) await createParent("Father", 70, "Mangalore", "father");
+      markStep("activate", "running", "Activating parent app...");
+      const data = await api("/api/mvp/parent/activate", {
+        method: "POST",
+        body: JSON.stringify({ uniqueCode: state.activeParent.uniqueCode })
+      });
+      markStep("activate", "done", `${data.parent.name} activated without login`);
+      event("Parent device activated", `${data.parent.name} used code ${data.parent.uniqueCode}.`, "blue");
+    }
+
+    async function simulateVitals() {
+      if (!state.activeParent) await activateParent();
+      markStep("vitals", "running", "Syncing simulated BLE vitals...");
+      const hr = 74 + Math.floor(Math.random() * 18);
+      const spo2 = 94 + Math.floor(Math.random() * 5);
+      const steps = 2600 + Math.floor(Math.random() * 4200);
+      state.vitals.push(hr);
+      el("hr").textContent = hr;
+      el("spo2").textContent = `${spo2}%`;
+      el("activity").textContent = steps;
+      renderChart();
+      await api("/api/health/add", {
+        method: "POST",
+        body: JSON.stringify({ parent: state.activeParent._id, heartRate: hr, steps, activity: "BLE synced movement" })
+      });
+      markStep("vitals", "done", `HR ${hr}, SpO2 ${spo2}%, movement ${steps}`);
+      event("Live vitals synced", `Heart rate ${hr}, SpO2 ${spo2}%, movement ${steps} steps.`, "good");
+    }
+
+    async function reminder(type) {
+      if (!state.activeParent) await activateParent();
+      const data = await api(`/api/mvp/parent/${state.activeParent.uniqueCode}/reminder`, {
+        method: "POST",
+        body: JSON.stringify({ type })
+      });
+      event(`${type} reminder`, data.message, "good");
+      return data;
+    }
+
+    async function runReminders() {
+      markStep("reminders", "running", "Playing reminders...");
+      await reminder("Medicine");
+      await reminder("Water");
+      await reminder("Meal");
+      markStep("reminders", "done", "Medicine, water, and meal reminders executed");
+    }
+
+    async function sendVoice() {
+      if (!state.activeParent) await activateParent();
+      markStep("voice", "running", "Translating regional voice request...");
+      const data = await api(`/api/mvp/parent/${state.activeParent.uniqueCode}/voice`, {
+        method: "POST",
+        body: JSON.stringify({ language: el("language").value, spokenText: el("voiceText").value })
+      });
+      markStep("voice", "done", data.request.translatedText);
+      event("Voice request sent", `${data.request.spokenText} → ${data.request.translatedText}`, "blue");
+    }
+
+    async function anomaly(type) {
+      if (!state.childId) await createChild();
+      const data = await api(`/api/mvp/caregiver/${state.childId}/anomaly`, {
+        method: "POST",
+        body: JSON.stringify({ type, vitals: { hr: 128, spo2: 91, movement: type === "Inactivity" ? 0 : 42 } })
+      });
+      event("AI anomaly detected", `${data.alert.type}, severity ${data.alert.severity}.`, "warn");
+    }
+
+    async function runAnomalies() {
+      markStep("anomaly", "running", "Detecting anomalies...");
+      await anomaly("Heart spike");
+      await anomaly("Inactivity");
+      await anomaly("Missed medicine");
+      markStep("anomaly", "done", "Heart spike, inactivity, missed medicine detected");
+    }
+
+    async function service(serviceName) {
+      if (!state.childId) await createChild();
+      const data = await api(`/api/mvp/caregiver/${state.childId}/service`, {
+        method: "POST",
+        body: JSON.stringify({ service: serviceName, parentId: state.activeParent?._id })
+      });
+      event("Healthcare service", data.message, "good");
+    }
+
+    async function runServices() {
+      markStep("services", "running", "Booking healthcare services...");
+      await service("doctor");
+      await service("medicine");
+      markStep("services", "done", "Practo booking and PharmEasy/1mg order completed");
+    }
+
+    async function parentSos(offline = false) {
+      if (!state.activeParent) await activateParent();
+      const key = offline ? "offline" : "sos";
+      markStep(key, "running", offline ? "Sending fallback SMS..." : "Sending realtime SOS...");
+      const data = await api(`/api/mvp/parent/${state.activeParent.uniqueCode}/sos`, {
+        method: "POST",
+        body: JSON.stringify({ message: offline ? "Offline emergency help needed" : "Emergency help needed", offline })
+      });
+      state.sosCount += 1;
+      el("sosCount").textContent = state.sosCount;
+      markStep(key, "done", `${data.channel}, severity ${data.severity}`);
+      event(offline ? "Offline SOS fallback" : "Online SOS", `${data.message}. Child notified: ${data.childNotified}`, "danger");
+      await loadHistory(false);
+    }
+
+    async function loadHistory(logResult = true) {
+      if (!state.childId) await createChild();
+      markStep("history", "running", "Loading SOS history...");
+      const data = await api(`/api/mvp/caregiver/${state.childId}/alerts`);
+      history.innerHTML = "";
+      data.alerts.forEach((alert) => historyEvent(`${alert.severity || "NORMAL"} SOS`, `${alert.parent?.name || "Parent"}: ${alert.message} (${alert.channel || "ONLINE"})`));
+      markStep("history", "done", `${data.count} alert records loaded`);
+      if (logResult) event("Alert history loaded", `${data.count} records found in backend.`, "blue");
+    }
+
+    async function runFullDemo() {
+      const btn = el("fullDemo");
+      setBusy(btn, true, "Executing...");
+      try {
+        reset(false);
+        event("Guided demo started", "Executing every MVP feature with visible results.", "blue");
+        await createChild();
+        await createParent("Father", 70, "Mangalore", "father");
+        await createParent("Mother", 66, "Bengaluru", "mother");
+        state.activeParent = state.parents[0];
+        renderParents();
+        await activateParent();
+        await simulateVitals();
+        await runReminders();
+        await sendVoice();
+        await runAnomalies();
+        await runServices();
+        await parentSos(false);
+        await parentSos(true);
+        await loadHistory();
+        event("Demo complete", "All added features executed successfully.", "good");
+      } catch (error) {
+        event("Demo failed", error.message, "danger");
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    function reset(withMessage = true) {
+      state.childId = null;
+      state.token = null;
+      state.email = null;
+      state.parents = [];
+      state.activeParent = null;
+      state.sosCount = 0;
+      state.vitals = [];
+      results.innerHTML = "";
+      history.innerHTML = "";
+      el("caregiverId").textContent = "Not created";
+      el("activeCodeMini").textContent = "Not created";
+      el("sosCount").textContent = "0";
+      el("hr").textContent = "--";
+      el("spo2").textContent = "--";
+      el("activity").textContent = "--";
+      renderParents();
+      renderChart();
+      initSteps();
+      if (withMessage) event("Demo reset", "Ready for a fresh hackathon walkthrough.", "blue");
+    }
+
+    socket.on("connect", () => el("socketStatus").textContent = "Connected");
+    socket.on("sosAlert", (data) => {
+      historyEvent(`Realtime SOS: ${data.severity}`, `${data.parentName} → child ${data.childId}: ${data.message}`);
+      event("Realtime notification received", `Socket.io delivered SOS to child room ${data.childId}.`, "danger");
+    });
+    socket.on("voiceRequest", (data) => event("Voice notification received", data.translatedText, "blue"));
+    socket.on("anomalyAlert", (data) => event("Realtime anomaly notification", `${data.type}: ${data.severity}`, "warn"));
+
+    async function checkApi() {
+      try {
+        await api("/api/parents/test");
+        el("apiStatus").textContent = "Online";
+        el("apiDot").classList.add("ok");
+      } catch {
+        el("apiStatus").textContent = "Offline";
+      }
+    }
+
+    el("fullDemo").addEventListener("click", runFullDemo);
+    el("resetDemo").addEventListener("click", () => reset(true));
+    el("createChild").addEventListener("click", () => createChild().catch(e => event("Action failed", e.message, "danger")));
+    el("createFather").addEventListener("click", () => createParent("Father", 70, "Mangalore", "father").catch(e => event("Action failed", e.message, "danger")));
+    el("createMother").addEventListener("click", () => createParent("Mother", 66, "Bengaluru", "mother").catch(e => event("Action failed", e.message, "danger")));
+    el("activateParent").addEventListener("click", () => activateParent().catch(e => event("Action failed", e.message, "danger")));
+    el("simulateVitals").addEventListener("click", () => simulateVitals().catch(e => event("Action failed", e.message, "danger")));
+    el("medicineReminder").addEventListener("click", () => reminder("Medicine").catch(e => event("Action failed", e.message, "danger")));
+    el("waterReminder").addEventListener("click", () => reminder("Water").catch(e => event("Action failed", e.message, "danger")));
+    el("mealReminder").addEventListener("click", () => reminder("Meal").catch(e => event("Action failed", e.message, "danger")));
+    el("languageButton").addEventListener("click", () => event("Language selected", `${el("language").selectedOptions[0].text} is active for voice commands.`, "blue"));
+    el("sendVoice").addEventListener("click", () => sendVoice().catch(e => event("Action failed", e.message, "danger")));
+    el("heartSpike").addEventListener("click", () => anomaly("Heart spike").catch(e => event("Action failed", e.message, "danger")));
+    el("inactivity").addEventListener("click", () => anomaly("Inactivity").catch(e => event("Action failed", e.message, "danger")));
+    el("missedMedicine").addEventListener("click", () => anomaly("Missed medicine").catch(e => event("Action failed", e.message, "danger")));
+    el("doctorBooking").addEventListener("click", () => service("doctor").catch(e => event("Action failed", e.message, "danger")));
+    el("medicineOrder").addEventListener("click", () => service("medicine").catch(e => event("Action failed", e.message, "danger")));
+    el("parentSos").addEventListener("click", () => parentSos(false).catch(e => event("Action failed", e.message, "danger")));
+    el("offlineSos").addEventListener("click", () => parentSos(true).catch(e => event("Action failed", e.message, "danger")));
+    el("loadHistory").addEventListener("click", () => loadHistory().catch(e => event("Action failed", e.message, "danger")));
+
+    reset(false);
+    checkApi();
+  </script>
+</body>
+</html>

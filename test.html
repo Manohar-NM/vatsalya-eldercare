@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SOS Listener</title>
+</head>
+<body>
+
+<h2>Listening for SOS...</h2>
+
+<!-- Socket.io CDN -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+const socket = io("http://localhost:5000");
+
+// ✅ REPLACE WITH YOUR REAL CHILD ID
+const childId = "69ddf7ecbf0330e5aabef453";
+
+// ✅ JOIN ROOM
+socket.emit("joinRoom", childId);
+
+// ✅ LISTEN FOR ALERT
+socket.on("sosAlert", (data) => {
+    console.log("🚨 SOS RECEIVED:", data);
+    alert("🚨 EMERGENCY ALERT!");
+});
+</script>
+
+</body>
+</html>
