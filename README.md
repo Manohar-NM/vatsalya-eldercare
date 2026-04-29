@@ -210,8 +210,6 @@ http://localhost:5173
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/users/register` | Register a new caregiver | ❌ |
-| `POST` | `/users/login` | Login and receive JWT token | ❌ |
 | `GET` | `/parents` | Get all parents for logged-in user | ✅ |
 | `POST` | `/parents` | Create a parent profile | ✅ |
 | `GET` | `/health/:parentId` | Get health records for a parent | ✅ |
