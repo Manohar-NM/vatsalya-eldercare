@@ -25,33 +25,33 @@ India has over **140 million elderly citizens**. Many live alone or with family 
 
 ---
 
-## 💡 What is Vatsalya?
+## What is Vatsalya?
 
 **Vatsalya** (Sanskrit: *वात्सल्य*, meaning unconditional parental love) is a full-stack, real-time healthcare monitoring platform built for families with elderly members.
 
 It follows a **child-controlled architecture**: caregivers register, manage parent profiles, track health vitals, and receive instant SOS alerts — all without requiring the elderly person to navigate a smartphone app.
 
-> 🚀 **Live at:** [vatsalya-eldercare.vercel.app](https://vatsalya-eldercare.vercel.app/)
+>  **Live at:** [vatsalya-eldercare.vercel.app](https://vatsalya-eldercare.vercel.app/)
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 | Feature | Description |
 |---|---|
-| 🚨 **Real-time SOS Alerts** | One-tap emergency trigger with voice confirmation. Socket.io pushes the alert to the caregiver instantly with a 30-second countdown modal. |
-| 📊 **Health Dashboard** | Live tracking of heart rate, step count, and activity levels. Visual cards update in real time. |
-| 👤 **Parent Profile Management** | Caregivers create and manage parent profiles with unique codes for secure linking. |
-| 🎤 **Voice Confirmation Panel** | SOS requires voice/manual confirmation to prevent false alerts. |
-| 💊 **Healthcare Services** | Medicine ordering, appointment booking, and an AI health assistant — all in one tab. |
-| 📅 **Activity Timeline** | Chronological log of parent activity and health events for pattern detection. |
-| 🔒 **JWT Authentication** | Secure token-based auth with bcrypt password hashing and protected route guards. |
-| 📱 **Fully Responsive** | Optimized across mobile, tablet, and desktop with adaptive layouts. |
-| ⚙️ **Settings & Emergency Contacts** | Caregivers can configure notification preferences, emergency contacts, and security options. |
+|  **Real-time SOS Alerts** | One-tap emergency trigger with voice confirmation. Socket.io pushes the alert to the caregiver instantly with a 30-second countdown modal. |
+|  **Health Dashboard** | Live tracking of heart rate, step count, and activity levels. Visual cards update in real time. |
+|  **Parent Profile Management** | Caregivers create and manage parent profiles with unique codes for secure linking. |
+|  **Voice Confirmation Panel** | SOS requires voice/manual confirmation to prevent false alerts. |
+|  **Healthcare Services** | Medicine ordering, appointment booking, and an AI health assistant — all in one tab. |
+|  **Activity Timeline** | Chronological log of parent activity and health events for pattern detection. |
+|  **JWT Authentication** | Secure token-based auth with bcrypt password hashing and protected route guards. |
+|  **Fully Responsive** | Optimized across mobile, tablet, and desktop with adaptive layouts. |
+|  **Settings & Emergency Contacts** | Caregivers can configure notification preferences, emergency contacts, and security options. |
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -84,7 +84,7 @@ User clicks SOS → Voice Panel confirms → POST /sos/trigger
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Frontend
 - **React 18** — UI framework with functional components and hooks
@@ -109,7 +109,7 @@ User clicks SOS → Voice Panel confirms → POST /sos/trigger
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 vatsalya-eldercare/
@@ -135,7 +135,7 @@ vatsalya-eldercare/
 
 ---
 
-## 🗄️ Data Models
+##  Data Models
 
 ```js
 // User
@@ -154,7 +154,7 @@ vatsalya-eldercare/
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Node.js ≥ 18
@@ -219,21 +219,21 @@ http://localhost:5173
 
 ---
 
-## 🌐 Pages Overview
+##  Pages Overview
 
 | Route | Page | Access |
 |-------|------|--------|
 | `/` | Landing Page | Public |
 | `/login` | Login | Public |
 | `/register` | Register | Public |
-| `/dashboard` | Caregiver Dashboard | 🔒 Protected |
-| `/parent-mode` | Parent Mode & Profile Manager | 🔒 Protected |
-| `/services` | Healthcare Services (Meds, Appointments, AI) | 🔒 Protected |
-| `/settings` | Account, Notifications, Emergency Contacts | 🔒 Protected |
+| `/dashboard` | Caregiver Dashboard |  Protected |
+| `/parent-mode` | Parent Mode & Profile Manager |  Protected |
+| `/services` | Healthcare Services (Meds, Appointments, AI) |  Protected |
+| `/settings` | Account, Notifications, Emergency Contacts |  Protected |
 
 ---
 
-## 📊 Project Stats
+##  Project Stats
 
 ```
 React Components:   33 total  (13 reusable)
@@ -247,7 +247,7 @@ Responsive Breaks:  3 (Mobile / Tablet / Desktop)
 
 ---
 
-## 🔮 Roadmap
+##  Roadmap
 
 - [ ] Push notifications (PWA / Firebase)
 - [ ] Wearable device integration (BLE health sensors)
@@ -258,7 +258,7 @@ Responsive Breaks:  3 (Mobile / Tablet / Desktop)
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
 
@@ -271,11 +271,6 @@ git push origin feature/your-feature-name
 
 ---
 
-## 📄 License
-
-This project is licensed under the **ISC License**.
-
----
 
 <div align="center">
 
