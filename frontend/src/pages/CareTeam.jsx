@@ -4,8 +4,6 @@ import API from "../services/api";
 import EmergencyAlertModal from "../components/EmergencyAlertModal";
 import "./CareTeam.css";
 
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
-
 const buildMapsUrl = (hospital, parentLocationText) => {
   const query = encodeURIComponent(`${hospital.name} ${parentLocationText || ""}`.trim());
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
@@ -18,6 +16,7 @@ export default function CareTeam() {
   const [hospitals, setHospitals] = useState([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [hospitalError, setHospitalError] = useState("");
+  const [hospitalNotice, setHospitalNotice] = useState("");
   const [dispatchHospital, setDispatchHospital] = useState(null);
   const [dispatchStatus, setDispatchStatus] = useState("");
 
@@ -54,83 +53,48 @@ export default function CareTeam() {
       );
     });
 
-  const geocodeParentLocation = async (locationText) => {
-    if (!locationText?.trim()) return null;
-
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(locationText)}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Could not read the parent's saved location.");
-    const data = await response.json();
-    if (!data.length) return null;
-
-    return {
-      lat: Number(data[0].lat),
-      lon: Number(data[0].lon),
-      label: locationText
-    };
-  };
-
   const fetchNearbyHospitals = async (origin) => {
-    const query = `
-      [out:json][timeout:25];
-      (
-        node["amenity"="hospital"](around:10000,${origin.lat},${origin.lon});
-        way["amenity"="hospital"](around:10000,${origin.lat},${origin.lon});
-        relation["amenity"="hospital"](around:10000,${origin.lat},${origin.lon});
-        node["healthcare"="hospital"](around:10000,${origin.lat},${origin.lon});
-        way["healthcare"="hospital"](around:10000,${origin.lat},${origin.lon});
-        relation["healthcare"="hospital"](around:10000,${origin.lat},${origin.lon});
-      );
-      out center tags 20;
-    `;
+    const res = await API.get("/nearby/hospitals", {
+      params: {
+        lat: origin?.lat,
+        lon: origin?.lon,
+        label: origin?.label,
+        location: selectedParent?.location
+      }
+    });
 
-    const response = await fetch(`${OVERPASS_URL}?data=${encodeURIComponent(query)}`);
-    if (!response.ok) throw new Error("Could not load hospitals right now.");
-    const data = await response.json();
-
-    return (data.elements || [])
-      .map((item) => {
-        const tags = item.tags || {};
-        const lat = item.lat || item.center?.lat;
-        const lon = item.lon || item.center?.lon;
-        if (!lat || !lon || !tags.name) return null;
-
-        const distanceKm = getDistanceKm(origin.lat, origin.lon, lat, lon);
-        return {
-          id: `${item.type}-${item.id}`,
-          name: tags.name,
-          phone: tags.phone || tags["contact:phone"] || "",
-          emergency: tags.emergency || tags["emergency_service"] || "",
-          address: [
-            tags["addr:housenumber"],
-            tags["addr:street"],
-            tags["addr:city"] || tags["addr:town"] || tags["addr:suburb"]
-          ].filter(Boolean).join(", "),
-          lat,
-          lon,
-          distanceKm
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.distanceKm - b.distanceKm);
+    return res.data;
   };
 
   const loadHospitals = async () => {
     setLoadingHospitals(true);
     setHospitalError("");
+    setHospitalNotice("");
     setDispatchStatus("");
 
     try {
-      const parentOrigin = await geocodeParentLocation(selectedParent?.location);
-      const origin = parentOrigin || await getBrowserLocation();
-      const results = await fetchNearbyHospitals(origin);
+      let origin = null;
+
+      if (!selectedParent?.location) {
+        try {
+          origin = await getBrowserLocation();
+        } catch {
+          origin = null;
+        }
+      }
+
+      const result = await fetchNearbyHospitals(origin);
+      const results = result.hospitals || [];
+
       setHospitals(results);
+      setHospitalNotice(result.message || "");
+
       if (!results.length) {
         setHospitalError("No hospitals were found within 10 km of this location.");
       }
     } catch (err) {
       setHospitals([]);
-      setHospitalError(err.message || "Unable to load nearby hospitals.");
+      setHospitalError(err.response?.data?.message || err.message || "Unable to load nearby hospitals.");
     } finally {
       setLoadingHospitals(false);
     }
@@ -203,6 +167,12 @@ export default function CareTeam() {
         {hospitalError && (
           <div className="hospital-error card animate-fade-in">
             {hospitalError}
+          </div>
+        )}
+
+        {hospitalNotice && !hospitalError && (
+          <div className="hospital-notice card animate-fade-in">
+            {hospitalNotice}
           </div>
         )}
 
@@ -282,19 +252,4 @@ export default function CareTeam() {
       )}
     </div>
   );
-}
-
-function getDistanceKm(lat1, lon1, lat2, lon2) {
-  const earthRadiusKm = 6371;
-  const dLat = toRadians(lat2 - lat1);
-  const dLon = toRadians(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function toRadians(degrees) {
-  return degrees * Math.PI / 180;
 }

@@ -93,6 +93,9 @@ app.use("/api/health", healthRoutes);
 const dashboardRoutes = require("./routes/dashboardRoutes");
 app.use("/api/dashboard", dashboardRoutes);
 
+const nearbyRoutes = require("./routes/nearbyRoutes");
+app.use("/api/nearby", nearbyRoutes);
+
 /* =========================
    🔥 TEST ROUTE
 ========================= */

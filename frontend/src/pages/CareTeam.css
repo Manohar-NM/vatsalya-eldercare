@@ -48,6 +48,7 @@
 }
 
 .hospital-error,
+.hospital-notice,
 .hospital-empty {
   padding: 1rem;
   margin-bottom: 1rem;
@@ -56,6 +57,10 @@
 
 .hospital-error {
   border-left: 4px solid var(--danger);
+}
+
+.hospital-notice {
+  border-left: 4px solid var(--accent);
 }
 
 /* Hospital Grid */
