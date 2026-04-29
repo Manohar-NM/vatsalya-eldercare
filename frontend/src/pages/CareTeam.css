@@ -1,0 +1,236 @@
+/* Care Team / Hospital Finder Header */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hospital-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.hospital-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: min(100%, 420px);
+}
+
+.hospital-controls label span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.hospital-controls select {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.hospital-controls p {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  max-width: 520px;
+}
+
+.hospital-error,
+.hospital-empty {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.hospital-error {
+  border-left: 4px solid var(--danger);
+}
+
+/* Hospital Grid */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.hospital-card {
+  padding: 1.25rem;
+  width: 100%;
+  text-align: left;
+  color: var(--text-primary);
+  transition: var(--transition);
+}
+
+.hospital-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(230, 57, 70, 0.22);
+}
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.875rem;
+}
+
+.team-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 0.875rem;
+}
+
+.hospital-avatar {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+}
+
+.team-status {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1875rem 0.625rem;
+  border-radius: 50px;
+}
+
+.team-status.online {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.team-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.team-role {
+  min-height: 2.3rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.875rem;
+  line-height: 1.5;
+}
+
+.team-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 0.875rem;
+}
+
+.team-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.td-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.td-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.hospital-dispatch-btn {
+  width: 100%;
+  padding: 0.65rem;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.hospital-dispatch-modal {
+  width: min(92%, 460px);
+  padding: 1.5rem;
+}
+
+.hospital-dispatch-modal h2 {
+  margin: 0.4rem 0 0.6rem;
+  font-size: 1.25rem;
+}
+
+.hospital-dispatch-modal p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.dispatch-message {
+  margin-top: 1rem;
+  padding: 0.875rem;
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--accent-dark);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.dispatch-status {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--success-bg);
+  color: var(--success);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.dispatch-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .page-header,
+  .hospital-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dispatch-actions {
+    flex-direction: column;
+  }
+}
