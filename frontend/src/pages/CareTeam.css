@@ -42,7 +42,7 @@
 
 .parent-location-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
   align-items: end;
   gap: 0.75rem;
 }
@@ -73,6 +73,10 @@
 }
 
 .hospital-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   border-left: 4px solid var(--danger);
 }
 
@@ -249,6 +253,11 @@
 @media (max-width: 600px) {
   .parent-location-form {
     grid-template-columns: 1fr;
+  }
+
+  .hospital-error {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .team-grid {

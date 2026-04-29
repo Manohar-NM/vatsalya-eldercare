@@ -9,6 +9,11 @@ const buildMapsUrl = (hospital, parentLocationText) => {
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 };
 
+const buildNearbyHospitalsUrl = (locationText) => {
+  const query = encodeURIComponent(`hospitals near ${locationText}`);
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+};
+
 export default function CareTeam() {
   const [showEmergency, setShowEmergency] = useState(false);
   const [parents, setParents] = useState([]);
@@ -160,6 +165,16 @@ export default function CareTeam() {
     }
   };
 
+  const openGoogleHospitals = () => {
+    const locationText = locationInput.trim() || selectedParent?.location || "";
+    if (!locationText) {
+      setLocationStatus("Enter the parent's location first.");
+      return;
+    }
+
+    window.open(buildNearbyHospitalsUrl(locationText), "_blank", "noopener,noreferrer");
+  };
+
   useEffect(() => {
     if (!selectedParent) return undefined;
     const timer = setTimeout(loadHospitals, 0);
@@ -232,6 +247,9 @@ export default function CareTeam() {
             <button className="btn btn-primary" type="submit" disabled={!selectedParent || savingLocation}>
               {savingLocation ? "Saving..." : "Save Location"}
             </button>
+            <button className="btn btn-outline" type="button" onClick={openGoogleHospitals} disabled={!selectedParent}>
+              Open Google Hospitals
+            </button>
           </form>
           <p>
             {selectedParent?.location
@@ -254,7 +272,10 @@ export default function CareTeam() {
 
         {hospitalError && (
           <div className="hospital-error card animate-fade-in">
-            {hospitalError}
+            <span>{hospitalError}</span>
+            <button className="btn btn-outline" type="button" onClick={openGoogleHospitals}>
+              Search on Google Maps
+            </button>
           </div>
         )}
 
