@@ -21,11 +21,8 @@ export default function CareTeam() {
   const [hospitals, setHospitals] = useState([]);
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [hospitalError, setHospitalError] = useState("");
-  const [hospitalNotice, setHospitalNotice] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [resolvedOrigin, setResolvedOrigin] = useState(null);
-  const [savingLocation, setSavingLocation] = useState(false);
-  const [locationStatus, setLocationStatus] = useState("");
   const [dispatchHospital, setDispatchHospital] = useState(null);
   const [dispatchStatus, setDispatchStatus] = useState("");
 
@@ -80,7 +77,6 @@ export default function CareTeam() {
   const loadHospitals = async (locationOverride = "") => {
     setLoadingHospitals(true);
     setHospitalError("");
-    setHospitalNotice("");
     setResolvedOrigin(null);
     setDispatchStatus("");
 
@@ -101,7 +97,6 @@ export default function CareTeam() {
 
       setHospitals(results);
       setResolvedOrigin(result.origin || null);
-      setHospitalNotice(result.message || "");
 
       if (!results.length) {
         setHospitalError("No hospitals were found within 10 km of this location.");
@@ -118,59 +113,13 @@ export default function CareTeam() {
     const nextParent = parents.find((parent) => parent._id === parentId);
     setSelectedParentId(parentId);
     setLocationInput(nextParent?.location || "");
-    setLocationStatus("");
     setResolvedOrigin(null);
     setHospitals([]);
   };
 
-  const saveParentLocation = async (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const parentLocation = String(formData.get("parentLocation") || "").trim();
-
-    if (!selectedParent || !parentLocation) {
-      setLocationStatus("Enter the parent's location first.");
-      return;
-    }
-
-    setSavingLocation(true);
-    setLocationStatus("");
-    setHospitalError("");
-    setHospitalNotice("");
-
-    try {
-      const payload = {
-        name: selectedParent.name,
-        age: selectedParent.age,
-        location: parentLocation,
-        phone: selectedParent.phone,
-        conditions: selectedParent.conditions,
-        bloodType: selectedParent.bloodType
-      };
-      const res = await API.put(`/parents/${selectedParent._id}`, payload);
-      const updatedParent = res.data.parent;
-
-      setParents((currentParents) =>
-        currentParents.map((parent) =>
-          parent._id === updatedParent._id ? updatedParent : parent
-        )
-      );
-      setLocationInput(updatedParent.location || parentLocation);
-      setLocationStatus("Parent location saved. Loading hospitals from this location...");
-      setTimeout(() => loadHospitals(parentLocation), 0);
-    } catch (err) {
-      setLocationStatus(err.response?.data?.message || err.message || "Could not save parent location.");
-    } finally {
-      setSavingLocation(false);
-    }
-  };
-
   const openGoogleHospitals = () => {
     const locationText = locationInput.trim() || selectedParent?.location || "";
-    if (!locationText) {
-      setLocationStatus("Enter the parent's location first.");
-      return;
-    }
+    if (!locationText) return;
 
     window.open(buildNearbyHospitalsUrl(locationText), "_blank", "noopener,noreferrer");
   };
@@ -232,7 +181,7 @@ export default function CareTeam() {
               ))}
             </select>
           </label>
-          <form className="parent-location-form" onSubmit={saveParentLocation} key={selectedParent?._id || "no-parent"}>
+          <div className="parent-location-form" key={selectedParent?._id || "no-parent"}>
             <label>
               <span>Parent Location</span>
               <input
@@ -241,16 +190,13 @@ export default function CareTeam() {
                 value={locationInput}
                 onChange={(e) => setLocationInput(e.target.value)}
                 placeholder="Example: Jayanagar, Bengaluru"
-                disabled={!selectedParent || savingLocation}
+                disabled={!selectedParent}
               />
             </label>
-            <button className="btn btn-primary" type="submit" disabled={!selectedParent || savingLocation}>
-              {savingLocation ? "Saving..." : "Save Location"}
-            </button>
-            <button className="btn btn-outline" type="button" onClick={openGoogleHospitals} disabled={!selectedParent}>
+            <button className="btn btn-primary" type="button" onClick={openGoogleHospitals} disabled={!selectedParent || !locationInput.trim()}>
               Open Google Hospitals
             </button>
-          </form>
+          </div>
           <p>
             {selectedParent?.location
               ? `Saved location: ${selectedParent.location}`
@@ -263,27 +209,6 @@ export default function CareTeam() {
               : ""}
           </p>
         </div>
-
-        {locationStatus && (
-          <div className="hospital-notice card animate-fade-in">
-            {locationStatus}
-          </div>
-        )}
-
-        {hospitalError && (
-          <div className="hospital-error card animate-fade-in">
-            <span>{hospitalError}</span>
-            <button className="btn btn-outline" type="button" onClick={openGoogleHospitals}>
-              Search on Google Maps
-            </button>
-          </div>
-        )}
-
-        {hospitalNotice && !hospitalError && (
-          <div className="hospital-notice card animate-fade-in">
-            {hospitalNotice}
-          </div>
-        )}
 
         <div className="team-grid hospital-grid">
           {hospitals.map((hospital, i) => (
