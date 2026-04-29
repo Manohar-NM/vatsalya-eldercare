@@ -8,9 +8,9 @@
 }
 
 .hospital-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) minmax(320px, 1fr);
+  align-items: end;
   gap: 1rem;
   padding: 1rem;
   margin-bottom: 1.25rem;
@@ -40,11 +40,28 @@
   font-weight: 700;
 }
 
+.parent-location-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.parent-location-form input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
 .hospital-controls p {
+  grid-column: 1 / -1;
   color: var(--text-secondary);
   font-size: 0.82rem;
   line-height: 1.5;
-  max-width: 520px;
 }
 
 .hospital-error,
@@ -221,8 +238,7 @@
 @media (max-width: 900px) {
   .page-header,
   .hospital-controls {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
   .team-grid {
@@ -231,6 +247,10 @@
 }
 
 @media (max-width: 600px) {
+  .parent-location-form {
+    grid-template-columns: 1fr;
+  }
+
   .team-grid {
     grid-template-columns: 1fr;
   }

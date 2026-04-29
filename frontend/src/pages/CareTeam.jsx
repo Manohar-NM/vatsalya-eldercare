@@ -17,6 +17,8 @@ export default function CareTeam() {
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [hospitalError, setHospitalError] = useState("");
   const [hospitalNotice, setHospitalNotice] = useState("");
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState("");
   const [dispatchHospital, setDispatchHospital] = useState(null);
   const [dispatchStatus, setDispatchStatus] = useState("");
 
@@ -53,20 +55,21 @@ export default function CareTeam() {
       );
     });
 
-  const fetchNearbyHospitals = async (origin) => {
+  const fetchNearbyHospitals = async (origin, locationOverride = "") => {
+    const savedLocation = locationOverride || selectedParent?.location || "";
     const res = await API.get("/nearby/hospitals", {
       params: {
         lat: origin?.lat,
         lon: origin?.lon,
         label: origin?.label,
-        location: selectedParent?.location
+        location: savedLocation
       }
     });
 
     return res.data;
   };
 
-  const loadHospitals = async () => {
+  const loadHospitals = async (locationOverride = "") => {
     setLoadingHospitals(true);
     setHospitalError("");
     setHospitalNotice("");
@@ -74,8 +77,9 @@ export default function CareTeam() {
 
     try {
       let origin = null;
+      const activeLocation = locationOverride || selectedParent?.location || "";
 
-      if (!selectedParent?.location) {
+      if (!activeLocation) {
         try {
           origin = await getBrowserLocation();
         } catch {
@@ -83,7 +87,7 @@ export default function CareTeam() {
         }
       }
 
-      const result = await fetchNearbyHospitals(origin);
+      const result = await fetchNearbyHospitals(origin, activeLocation);
       const results = result.hospitals || [];
 
       setHospitals(results);
@@ -97,6 +101,47 @@ export default function CareTeam() {
       setHospitalError(err.response?.data?.message || err.message || "Unable to load nearby hospitals.");
     } finally {
       setLoadingHospitals(false);
+    }
+  };
+
+  const saveParentLocation = async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const parentLocation = String(formData.get("parentLocation") || "").trim();
+
+    if (!selectedParent || !parentLocation) {
+      setLocationStatus("Enter the parent's location first.");
+      return;
+    }
+
+    setSavingLocation(true);
+    setLocationStatus("");
+    setHospitalError("");
+    setHospitalNotice("");
+
+    try {
+      const payload = {
+        name: selectedParent.name,
+        age: selectedParent.age,
+        location: parentLocation,
+        phone: selectedParent.phone,
+        conditions: selectedParent.conditions,
+        bloodType: selectedParent.bloodType
+      };
+      const res = await API.put(`/parents/${selectedParent._id}`, payload);
+      const updatedParent = res.data.parent;
+
+      setParents((currentParents) =>
+        currentParents.map((parent) =>
+          parent._id === updatedParent._id ? updatedParent : parent
+        )
+      );
+      setLocationStatus("Parent location saved. Loading hospitals from this location...");
+      setTimeout(() => loadHospitals(parentLocation), 0);
+    } catch (err) {
+      setLocationStatus(err.response?.data?.message || err.message || "Could not save parent location.");
+    } finally {
+      setSavingLocation(false);
     }
   };
 
@@ -157,12 +202,33 @@ export default function CareTeam() {
               ))}
             </select>
           </label>
+          <form className="parent-location-form" onSubmit={saveParentLocation} key={selectedParent?._id || "no-parent"}>
+            <label>
+              <span>Parent Location</span>
+              <input
+                name="parentLocation"
+                type="text"
+                defaultValue={selectedParent?.location || ""}
+                placeholder="Example: Jayanagar, Bengaluru"
+                disabled={!selectedParent || savingLocation}
+              />
+            </label>
+            <button className="btn btn-primary" type="submit" disabled={!selectedParent || savingLocation}>
+              {savingLocation ? "Saving..." : "Save Location"}
+            </button>
+          </form>
           <p>
             {selectedParent?.location
-              ? `Using saved location for ${selectedParent.name}: ${selectedParent.location}`
-              : "No saved parent location found. Browser location permission is used as fallback."}
+              ? `Hospitals are searched from: ${selectedParent.location}`
+              : "Add the parent's location to search hospitals near their real address."}
           </p>
         </div>
+
+        {locationStatus && (
+          <div className="hospital-notice card animate-fade-in">
+            {locationStatus}
+          </div>
+        )}
 
         {hospitalError && (
           <div className="hospital-error card animate-fade-in">
