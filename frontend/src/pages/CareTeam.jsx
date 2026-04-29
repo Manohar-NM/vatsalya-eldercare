@@ -17,6 +17,8 @@ export default function CareTeam() {
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [hospitalError, setHospitalError] = useState("");
   const [hospitalNotice, setHospitalNotice] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [resolvedOrigin, setResolvedOrigin] = useState(null);
   const [savingLocation, setSavingLocation] = useState(false);
   const [locationStatus, setLocationStatus] = useState("");
   const [dispatchHospital, setDispatchHospital] = useState(null);
@@ -33,6 +35,7 @@ export default function CareTeam() {
         const parentList = res.data || [];
         setParents(parentList);
         setSelectedParentId(parentList[0]?._id || "");
+        setLocationInput(parentList[0]?.location || "");
       })
       .catch((err) => console.error("Error loading parents:", err));
   }, []);
@@ -56,7 +59,7 @@ export default function CareTeam() {
     });
 
   const fetchNearbyHospitals = async (origin, locationOverride = "") => {
-    const savedLocation = locationOverride || selectedParent?.location || "";
+    const savedLocation = locationOverride || locationInput.trim() || selectedParent?.location || "";
     const res = await API.get("/nearby/hospitals", {
       params: {
         lat: origin?.lat,
@@ -73,11 +76,12 @@ export default function CareTeam() {
     setLoadingHospitals(true);
     setHospitalError("");
     setHospitalNotice("");
+    setResolvedOrigin(null);
     setDispatchStatus("");
 
     try {
       let origin = null;
-      const activeLocation = locationOverride || selectedParent?.location || "";
+      const activeLocation = locationOverride || locationInput.trim() || selectedParent?.location || "";
 
       if (!activeLocation) {
         try {
@@ -91,6 +95,7 @@ export default function CareTeam() {
       const results = result.hospitals || [];
 
       setHospitals(results);
+      setResolvedOrigin(result.origin || null);
       setHospitalNotice(result.message || "");
 
       if (!results.length) {
@@ -102,6 +107,15 @@ export default function CareTeam() {
     } finally {
       setLoadingHospitals(false);
     }
+  };
+
+  const selectParent = (parentId) => {
+    const nextParent = parents.find((parent) => parent._id === parentId);
+    setSelectedParentId(parentId);
+    setLocationInput(nextParent?.location || "");
+    setLocationStatus("");
+    setResolvedOrigin(null);
+    setHospitals([]);
   };
 
   const saveParentLocation = async (event) => {
@@ -136,6 +150,7 @@ export default function CareTeam() {
           parent._id === updatedParent._id ? updatedParent : parent
         )
       );
+      setLocationInput(updatedParent.location || parentLocation);
       setLocationStatus("Parent location saved. Loading hospitals from this location...");
       setTimeout(() => loadHospitals(parentLocation), 0);
     } catch (err) {
@@ -194,7 +209,7 @@ export default function CareTeam() {
         <div className="hospital-controls card animate-fade-in">
           <label>
             <span>Parent location reference</span>
-            <select value={selectedParent?._id || ""} onChange={(e) => setSelectedParentId(e.target.value)}>
+            <select value={selectedParent?._id || ""} onChange={(e) => selectParent(e.target.value)}>
               {parents.map((parent) => (
                 <option key={parent._id} value={parent._id}>
                   {parent.name} {parent.location ? `- ${parent.location}` : "- browser location fallback"}
@@ -208,7 +223,8 @@ export default function CareTeam() {
               <input
                 name="parentLocation"
                 type="text"
-                defaultValue={selectedParent?.location || ""}
+                value={locationInput}
+                onChange={(e) => setLocationInput(e.target.value)}
                 placeholder="Example: Jayanagar, Bengaluru"
                 disabled={!selectedParent || savingLocation}
               />
@@ -219,8 +235,14 @@ export default function CareTeam() {
           </form>
           <p>
             {selectedParent?.location
-              ? `Hospitals are searched from: ${selectedParent.location}`
+              ? `Saved location: ${selectedParent.location}`
               : "Add the parent's location to search hospitals near their real address."}
+            {locationInput.trim() && locationInput.trim() !== selectedParent?.location
+              ? ` Current search will use: ${locationInput.trim()}`
+              : ""}
+            {resolvedOrigin
+              ? ` Resolved map point: ${resolvedOrigin.label} (${resolvedOrigin.lat.toFixed(4)}, ${resolvedOrigin.lon.toFixed(4)}).`
+              : ""}
           </p>
         </div>
 

@@ -53,8 +53,10 @@ const fallbackHospitals = [
 ];
 
 router.get("/hospitals", async (req, res) => {
+  let origin = null;
+
   try {
-    const origin = await resolveOrigin(req.query);
+    origin = await resolveOrigin(req.query);
     const hospitals = await fetchNearbyHospitals(origin);
 
     if (hospitals.length) {
@@ -73,7 +75,12 @@ router.get("/hospitals", async (req, res) => {
     });
   } catch (error) {
     console.error("Nearby hospitals lookup failed:", error.message);
-    const origin = parseCoordinates(req.query) || DEFAULT_ORIGIN;
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+
+    origin = origin || parseCoordinates(req.query) || DEFAULT_ORIGIN;
     return res.json({
       origin,
       fallback: true,
@@ -145,6 +152,10 @@ async function resolveOrigin(query) {
   if (query.location) {
     const geocoded = await geocodeLocation(query.location);
     if (geocoded) return geocoded;
+
+    const error = new Error("Could not find that parent location. Try a clearer address like 'Jayanagar, Bengaluru'.");
+    error.statusCode = 422;
+    throw error;
   }
 
   return DEFAULT_ORIGIN;
@@ -166,25 +177,29 @@ function parseCoordinates(query) {
 }
 
 async function geocodeLocation(locationText) {
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(locationText)}`,
-    {
-      headers: {
-        "User-Agent": "Vatsalya-Eldercare/1.0"
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(locationText)}`,
+      {
+        headers: {
+          "User-Agent": "Vatsalya-Eldercare/1.0"
+        }
       }
-    }
-  );
+    );
 
-  if (!response.ok) return null;
+    if (!response.ok) return null;
 
-  const data = await response.json();
-  if (!data.length) return null;
+    const data = await response.json();
+    if (!data.length) return null;
 
-  return {
-    lat: Number(data[0].lat),
-    lon: Number(data[0].lon),
-    label: locationText
-  };
+    return {
+      lat: Number(data[0].lat),
+      lon: Number(data[0].lon),
+      label: locationText
+    };
+  } catch {
+    return null;
+  }
 }
 
 function getFallbackHospitals(origin) {
