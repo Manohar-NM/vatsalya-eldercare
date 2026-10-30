@@ -1,37 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import socket from "../socket/socket";
 import Sidebar from "../components/Sidebar";
 import FallDetectionModal from "../components/FallDetectionModal";
 import EmergencyAlertModal from "../components/EmergencyAlertModal";
+import AiHealthInsights from "../components/AiHealthInsights";
+import AiCaregiverAssistant from "../components/AiCaregiverAssistant";
 import "./Dashboard.css";
 
 const emptyReminderForm = {
-  water: {
-    enabled: true,
-    intervalMinutes: 60,
-    startTime: "08:00",
-    endTime: "20:00"
-  },
-  food: {
-    breakfast: "08:00",
-    lunch: "13:00",
-    dinner: "20:00"
-  },
-  medicines: [
-    { name: "", times: "08:00", timesPerDay: 1 }
-  ]
+  water: { enabled: true, intervalMinutes: 60, startTime: "08:00", endTime: "20:00" },
+  food: { breakfast: "08:00", lunch: "13:00", dinner: "20:00" },
+  medicines: [{ name: "", times: "08:00", timesPerDay: 1 }]
 };
 
 const toReminderForm = (reminders) => ({
-  water: {
-    ...emptyReminderForm.water,
-    ...(reminders?.water || {})
-  },
-  food: {
-    ...emptyReminderForm.food,
-    ...(reminders?.food || {})
-  },
+  water: { ...emptyReminderForm.water, ...(reminders?.water || {}) },
+  food: { ...emptyReminderForm.food, ...(reminders?.food || {}) },
   medicines: reminders?.medicines?.length
     ? reminders.medicines.map((med) => ({
         name: med.name || "",
@@ -41,12 +27,18 @@ const toReminderForm = (reminders) => ({
     : emptyReminderForm.medicines
 });
 
+function getInitials(name = "Parent") {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+}
+
 export default function Dashboard() {
+  const navigate = useNavigate();
   const childId = localStorage.getItem("childId");
-  const childName = localStorage.getItem("userName") || "Child / Caregiver";
+  const childName = localStorage.getItem("userName") || "Ananya Vatsalya";
 
   const [parents, setParents] = useState([]);
-  const [selectedParent, setSelectedParent] = useState(null);
+  const [selectedParentId, setSelectedParentId] = useState(null);
+  const [healthRecords, setHealthRecords] = useState([]);
   const [showAddParent, setShowAddParent] = useState(false);
   const [showAddMedicine, setShowAddMedicine] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
@@ -60,205 +52,138 @@ export default function Dashboard() {
   const [parentSearch, setParentSearch] = useState("");
   const [parentFilter, setParentFilter] = useState("all");
   const [parentSort, setParentSort] = useState("name-asc");
-
-  // New parent form
   const [newParent, setNewParent] = useState({ name: "", age: "", phone: "", conditions: "", bloodType: "O+" });
-  // New medicine form
   const [newMedicine, setNewMedicine] = useState({ name: "", dosage: "", frequency: "Daily" });
-  const [newAppointment, setNewAppointment] = useState({
-    doctorName: "",
-    specialty: "",
-    date: "",
-    time: "",
-    notes: ""
-  });
+  const [newAppointment, setNewAppointment] = useState({ doctorName: "", specialty: "", date: "", time: "", notes: "" });
   const [reminderForm, setReminderForm] = useState(emptyReminderForm);
-
-  // Simulated live heart rate for selected parent
-  const [liveHeartRate, setLiveHeartRate] = useState(72);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveHeartRate(prev => Math.max(60, Math.min(90, prev + Math.floor(Math.random() * 5) - 2)));
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  const [showAddHealth, setShowAddHealth] = useState(false);
+  const [newHealth, setNewHealth] = useState({ heartRate: "", spO2: "", bloodPressure: "", steps: "", activity: "" });
 
   const fetchParents = useCallback(async () => {
     try {
       const res = await API.get("/parents/my-parents");
-      setParents(res.data);
-      setSelectedParent(prev => prev || res.data[0] || null);
+      setParents(res.data || []);
     } catch (err) {
       console.error("Error fetching parents:", err);
     }
   }, []);
 
-  // Fetch parents on load
   useEffect(() => {
+    let isSubscribed = true;
     API.get("/parents/my-parents")
       .then((res) => {
-        setParents(res.data);
-        setSelectedParent(prev => prev || res.data[0] || null);
+        if (isSubscribed) setParents(res.data || []);
       })
       .catch((err) => {
-        console.error("Error fetching parents:", err);
+        if (isSubscribed) console.error("Error fetching parents:", err);
       });
+
+    API.get("/sos")
+      .then((res) => {
+        if (isSubscribed && res.data?.sos) {
+          const active = res.data.sos
+            .filter((s) => s.status === "ACTIVE")
+            .map((s) => ({
+              sosId: s._id,
+              parentId: s.parent?._id || s.parent,
+              parentName: s.parent?.name || "Parent",
+              location: s.parent?.location || "",
+              phone: s.parent?.phone || "",
+              message: s.message,
+              severity: s.severity,
+              time: s.createdAt
+            }));
+          setSosAlerts(active);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
-  // Socket: join child room & listen for alerts
   useEffect(() => {
     if (!childId) return;
-    socket.emit("joinRoom", childId);
+    const token = localStorage.getItem("token");
+    socket.emit("joinRoom", { room: childId, token });
 
     socket.on("SOS_ALERT", (data) => {
-      setSosAlerts(prev => [data, ...prev]);
+      setSosAlerts((prev) => [data, ...prev]);
       setShowFallModal(true);
     });
-
-    socket.on("MEDICINE_ORDER", (data) => {
-      setMedicineOrders(prev => [data, ...prev]);
+    socket.on("SOS_RESOLVED", (data) => {
+      setSosAlerts((prev) => prev.filter((alert) => (alert.sosId || alert._id) !== data.sosId));
+      setShowFallModal(false);
     });
-
-    socket.on("VOICE_MESSAGE", (data) => {
-      setVoiceMessages(prev => [data, ...prev]);
-      alert(`Voice message from ${data.parentName}: ${data.translatedText}`);
+    socket.on("MEDICINE_ORDER", (data) => setMedicineOrders((prev) => [data, ...prev]));
+    socket.on("VOICE_MESSAGE", (data) => setVoiceMessages((prev) => [data, ...prev]));
+    socket.on("HEALTH_UPDATE", (data) => {
+      setParents((prev) => prev.map((p) => p._id === data.parentId ? { ...p, ...data } : p));
     });
 
     return () => {
       socket.off("SOS_ALERT");
+      socket.off("SOS_RESOLVED");
       socket.off("MEDICINE_ORDER");
       socket.off("VOICE_MESSAGE");
+      socket.off("HEALTH_UPDATE");
     };
   }, [childId]);
 
-  const openBuySearch = (medicineName) => {
-    const query = encodeURIComponent(`buy ${medicineName} medicine online`);
-    window.open(`https://www.google.com/search?q=${query}`, "_blank", "noopener,noreferrer");
-  };
+  const visibleParents = useMemo(() => {
+    const search = parentSearch.trim().toLowerCase();
+    const hasSos = (parent) => sosAlerts.some((alert) => alert.parentId === parent._id || alert.parentName === parent.name);
+    const hasOrder = (parent) => medicineOrders.some((order) => order.parentId === parent._id || order.parentName === parent.name);
+    const hasVoice = (parent) => voiceMessages.some((message) => message.parentId === parent._id || message.parentName === parent.name);
 
-  const handleCreateParent = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await API.post("/parents", {
-        name: newParent.name,
-        age: Number(newParent.age),
-        phone: newParent.phone,
-        conditions: newParent.conditions,
-        bloodType: newParent.bloodType
+    return parents
+      .filter((parent) => {
+        if (!search) return true;
+        return [parent.name, parent.phone, parent.conditions, parent.uniqueCode, parent.bloodType]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(search));
+      })
+      .filter((parent) => {
+        if (parentFilter === "sos") return hasSos(parent);
+        if (parentFilter === "orders") return hasOrder(parent);
+        if (parentFilter === "voice") return hasVoice(parent);
+        return true;
+      })
+      .sort((a, b) => {
+        if (parentSort === "age-asc") return (Number(a.age) || 0) - (Number(b.age) || 0);
+        if (parentSort === "age-desc") return (Number(b.age) || 0) - (Number(a.age) || 0);
+        if (parentSort === "name-desc") return String(b.name || "").localeCompare(String(a.name || ""));
+        return String(a.name || "").localeCompare(String(b.name || ""));
       });
-      alert(`✅ Parent created!\n\n🔑 Unique Code: ${res.data.uniqueCode}\n\nShare this code with ${newParent.name} for their device.`);
-      setShowAddParent(false);
-      setNewParent({ name: "", age: "", phone: "", conditions: "", bloodType: "O+" });
-      fetchParents();
-    } catch (err) {
-      alert("Error: " + (err.response?.data?.error || "Failed to create parent"));
-    }
-  };
+  }, [medicineOrders, parentFilter, parentSearch, parentSort, parents, sosAlerts, voiceMessages]);
 
-  const handleAddMedicine = async (e) => {
-    e.preventDefault();
-    if (!selectedParent) return alert("Select a parent first");
-    try {
-      const res = await API.post(`/parents/${selectedParent._id}/medicine`, newMedicine);
-      setSelectedParent({ ...selectedParent, medicines: res.data.medicines });
-      setParents(prev => prev.map(p => p._id === selectedParent._id ? { ...p, medicines: res.data.medicines } : p));
-      setShowAddMedicine(false);
-      setNewMedicine({ name: "", dosage: "", frequency: "Daily" });
-    } catch (err) {
-      alert("Error: " + (err.response?.data?.error || "Failed to add medicine"));
-    }
-  };
+  const selectedParent = useMemo(() => {
+    if (!visibleParents.length) return null;
+    return visibleParents.find((parent) => parent._id === selectedParentId) || visibleParents[0] || null;
+  }, [selectedParentId, visibleParents]);
 
-  const handleRemoveMedicine = async (medicineId) => {
-    if (!selectedParent) return;
-    try {
-      const res = await API.delete(`/parents/${selectedParent._id}/medicine/${medicineId}`);
-      setSelectedParent({ ...selectedParent, medicines: res.data.medicines });
-      setParents(prev => prev.map(p => p._id === selectedParent._id ? { ...p, medicines: res.data.medicines } : p));
-    } catch {
-      alert("Error removing medicine");
-    }
-  };
-
-  const openReminderSettings = () => {
-    setReminderForm(toReminderForm(selectedParent?.reminders));
-    setShowReminders(true);
-  };
-
-  const updateMedicineReminder = (index, field, value) => {
-    setReminderForm(prev => ({
-      ...prev,
-      medicines: prev.medicines.map((med, i) =>
-        i === index ? { ...med, [field]: value } : med
-      )
-    }));
-  };
-
-  const addMedicineReminderRow = () => {
-    setReminderForm(prev => ({
-      ...prev,
-      medicines: [...prev.medicines, { name: "", times: "08:00", timesPerDay: 1 }]
-    }));
-  };
-
-  const removeMedicineReminderRow = (index) => {
-    setReminderForm(prev => ({
-      ...prev,
-      medicines: prev.medicines.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSaveReminders = async (e) => {
-    e.preventDefault();
-    if (!selectedParent) return;
-
-    const reminders = {
-      water: {
-        ...reminderForm.water,
-        intervalMinutes: Number(reminderForm.water.intervalMinutes) || 60
-      },
-      food: reminderForm.food,
-      medicines: reminderForm.medicines
-        .filter(med => med.name.trim())
-        .map(med => ({
-          name: med.name.trim(),
-          times: med.times.split(",").map(time => time.trim()).filter(Boolean),
-          timesPerDay: Number(med.timesPerDay) || 1
-        }))
+  useEffect(() => {
+    if (!selectedParent?._id) return;
+    let isSubscribed = true;
+    API.get(`/health/${selectedParent._id}`)
+      .then((res) => {
+        if (isSubscribed) setHealthRecords(res.data || []);
+      })
+      .catch((err) => {
+        if (isSubscribed) {
+          console.error("Error fetching health history:", err);
+          setHealthRecords([]);
+        }
+      });
+    return () => {
+      isSubscribed = false;
     };
-
-    try {
-      const res = await API.put(`/parents/reminders/${selectedParent._id}`, { reminders });
-      const updatedParent = { ...selectedParent, reminders: res.data.reminders };
-      setSelectedParent(updatedParent);
-      setParents(prev => prev.map(p => p._id === selectedParent._id ? updatedParent : p));
-      setShowReminders(false);
-      alert("Reminders saved for parent device");
-    } catch (err) {
-      alert("Error: " + (err.response?.data?.error || "Failed to save reminders"));
-    }
-  };
-
-  const handleAddAppointment = async (e) => {
-    e.preventDefault();
-    if (!selectedParent) return;
-
-    try {
-      const res = await API.post(`/parents/${selectedParent._id}/appointments`, newAppointment);
-      const updatedParent = { ...selectedParent, appointments: res.data.appointments };
-      setSelectedParent(updatedParent);
-      setParents(prev => prev.map(p => p._id === selectedParent._id ? updatedParent : p));
-      setShowAppointment(false);
-      setNewAppointment({ doctorName: "", specialty: "", date: "", time: "", notes: "" });
-      alert("Appointment added for parent device");
-    } catch (err) {
-      alert("Error: " + (err.response?.data?.error || "Failed to add appointment"));
-    }
-  };
+  }, [selectedParent?._id]);
 
   const ensureChildPhone = useCallback(() => {
     if (childPhone) return childPhone;
-    const phone = window.prompt("Enter child/caregiver phone number for emergency auto-call:");
+    const phone = window.prompt("Enter caregiver phone number for emergency auto-call:");
     if (phone?.trim()) {
       const cleanPhone = phone.trim();
       localStorage.setItem("childPhone", cleanPhone);
@@ -270,742 +195,558 @@ export default function Dashboard() {
 
   const callChildPhone = useCallback(() => {
     const phone = ensureChildPhone();
-    if (!phone) {
-      alert("Child phone number is required for auto-call.");
-      return;
-    }
+    if (!phone) return;
     window.location.href = `tel:${phone}`;
     setShowEmergencyModal(false);
-  }, [ensureChildPhone]);
+  }, [ensureChildPhone, setShowEmergencyModal]);
 
   const handleSOSClick = () => {
     ensureChildPhone();
     setShowEmergencyModal(true);
   };
 
-  const visibleParents = useMemo(() => {
-    const normalizedSearch = parentSearch.trim().toLowerCase();
+  const handleLogout = () => {
+    const confirmed = window.confirm("Are you sure you want to logout?");
+    if (!confirmed) return;
+    localStorage.clear();
+    navigate("/login", { replace: true });
+  };
 
-    const parentHasSos = (parent) =>
-      sosAlerts.some((alert) => alert.parentId === parent._id || alert.parentName === parent.name);
-
-    const parentHasOrder = (parent) =>
-      medicineOrders.some((order) => order.parentId === parent._id || order.parentName === parent.name);
-
-    const parentHasVoice = (parent) =>
-      voiceMessages.some((message) => message.parentId === parent._id || message.parentName === parent.name);
-
-    return parents
-      .filter((parent) => {
-        if (!normalizedSearch) return true;
-        return [
-          parent.name,
-          parent.phone,
-          parent.conditions,
-          parent.uniqueCode,
-          parent.bloodType
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(normalizedSearch));
-      })
-      .filter((parent) => {
-        if (parentFilter === "sos") return parentHasSos(parent);
-        if (parentFilter === "orders") return parentHasOrder(parent);
-        if (parentFilter === "voice") return parentHasVoice(parent);
-        return true;
-      })
-      .sort((a, b) => {
-        if (parentSort === "age-asc") return (Number(a.age) || 0) - (Number(b.age) || 0);
-        if (parentSort === "age-desc") return (Number(b.age) || 0) - (Number(a.age) || 0);
-        if (parentSort === "name-desc") return String(b.name || "").localeCompare(String(a.name || ""));
-        return String(a.name || "").localeCompare(String(b.name || ""));
+  const handleCreateParent = async (event) => {
+    event.preventDefault();
+    try {
+      const res = await API.post("/parents", {
+        name: newParent.name,
+        age: Number(newParent.age),
+        phone: newParent.phone,
+        conditions: newParent.conditions,
+        bloodType: newParent.bloodType
       });
-  }, [medicineOrders, parentFilter, parentSearch, parentSort, parents, sosAlerts, voiceMessages]);
-
-  useEffect(() => {
-    if (!visibleParents.length) return;
-    if (!selectedParent || !visibleParents.some((parent) => parent._id === selectedParent._id)) {
-      const timer = setTimeout(() => setSelectedParent(visibleParents[0]), 0);
-      return () => clearTimeout(timer);
+      alert(`Parent created. Unique Code: ${res.data.uniqueCode}`);
+      setShowAddParent(false);
+      setNewParent({ name: "", age: "", phone: "", conditions: "", bloodType: "O+" });
+      fetchParents();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to create parent");
     }
-    return undefined;
-  }, [selectedParent, visibleParents]);
+  };
 
-  const heartRateData = [65, 70, 68, 72, 75, 71, 73, 69, liveHeartRate, 74, 70, 72];
+  const handleAddMedicine = async (event) => {
+    event.preventDefault();
+    if (!selectedParent) return;
+    try {
+      const res = await API.post(`/parents/${selectedParent._id}/medicine`, newMedicine);
+      const updatedParent = { ...selectedParent, medicines: res.data.medicines };
+      setParents((prev) => prev.map((parent) => parent._id === selectedParent._id ? updatedParent : parent));
+      setShowAddMedicine(false);
+      setNewMedicine({ name: "", dosage: "", frequency: "Daily" });
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to add medicine");
+    }
+  };
+
+  const handleRemoveMedicine = async (medicineId) => {
+    if (!selectedParent) return;
+    try {
+      const res = await API.delete(`/parents/${selectedParent._id}/medicine/${medicineId}`);
+      const updatedParent = { ...selectedParent, medicines: res.data.medicines };
+      setParents((prev) => prev.map((parent) => parent._id === selectedParent._id ? updatedParent : parent));
+    } catch {
+      alert("Error removing medicine");
+    }
+  };
+
+  const handleResolveSOS = async (sosId) => {
+    if (!sosId) return;
+    try {
+      await API.put(`/sos/${sosId}/resolve`);
+      setSosAlerts((prev) => prev.filter((a) => (a.sosId || a._id) !== sosId));
+    } catch (err) {
+      console.error("Failed to resolve SOS:", err);
+    }
+  };
+
+  const handleAddAppointment = async (event) => {
+    event.preventDefault();
+    if (!selectedParent) return;
+    try {
+      const res = await API.post(`/parents/${selectedParent._id}/appointments`, newAppointment);
+      const updatedParent = { ...selectedParent, appointments: res.data.appointments };
+      setParents((prev) => prev.map((parent) => parent._id === selectedParent._id ? updatedParent : parent));
+      setShowAppointment(false);
+      setNewAppointment({ doctorName: "", specialty: "", date: "", time: "", notes: "" });
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to add appointment");
+    }
+  };
+
+  const openReminderSettings = () => {
+    setReminderForm(toReminderForm(selectedParent?.reminders));
+    setShowReminders(true);
+  };
+
+  const updateMedicineReminder = (index, field, value) => {
+    setReminderForm((prev) => ({
+      ...prev,
+      medicines: prev.medicines.map((med, i) => i === index ? { ...med, [field]: value } : med)
+    }));
+  };
+
+  const handleSaveReminders = async (event) => {
+    event.preventDefault();
+    if (!selectedParent) return;
+
+    const reminders = {
+      water: { ...reminderForm.water, intervalMinutes: Number(reminderForm.water.intervalMinutes) || 60 },
+      food: reminderForm.food,
+      medicines: reminderForm.medicines
+        .filter((med) => med.name.trim())
+        .map((med) => ({
+          name: med.name.trim(),
+          times: med.times.split(",").map((time) => time.trim()).filter(Boolean),
+          timesPerDay: Number(med.timesPerDay) || 1
+        }))
+    };
+
+    try {
+      const res = await API.put(`/parents/reminders/${selectedParent._id}`, { reminders });
+      const updatedParent = { ...selectedParent, reminders: res.data.reminders };
+      setParents((prev) => prev.map((parent) => parent._id === selectedParent._id ? updatedParent : parent));
+      setShowReminders(false);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to save reminders");
+    }
+  };
+
+  const handleAddHealth = async (event) => {
+    event.preventDefault();
+    if (!selectedParent) return;
+    try {
+      const payload = {
+        parent: selectedParent._id,
+        heartRate: newHealth.heartRate ? Number(newHealth.heartRate) : undefined,
+        spO2: newHealth.spO2 ? Number(newHealth.spO2) : undefined,
+        bloodPressure: newHealth.bloodPressure.trim() || undefined,
+        steps: newHealth.steps ? Number(newHealth.steps) : undefined,
+        activity: newHealth.activity.trim() || undefined
+      };
+      const res = await API.post("/health/add", payload);
+      setHealthRecords((prev) => [res.data, ...prev]);
+      setParents((prev) =>
+        prev.map((p) =>
+          p._id === selectedParent._id
+            ? {
+                ...p,
+                heartRate: res.data.heartRate !== undefined ? res.data.heartRate : p.heartRate,
+                spO2: res.data.spO2 !== undefined ? res.data.spO2 : p.spO2,
+                bloodPressure: res.data.bloodPressure || p.bloodPressure,
+                activity: res.data.activity || p.activity
+              }
+            : p
+        )
+      );
+      setShowAddHealth(false);
+      setNewHealth({ heartRate: "", spO2: "", bloodPressure: "", steps: "", activity: "" });
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to record health measurement");
+    }
+  };
+
+  const parentHealthRecords = useMemo(
+    () => healthRecords.filter((r) => r.parent === selectedParent?._id || r.parent?._id === selectedParent?._id),
+    [healthRecords, selectedParent?._id]
+  );
+  const latestHealth = parentHealthRecords[0] || null;
+  const latestHeartRate = latestHealth?.heartRate ?? selectedParent?.heartRate ?? null;
+  const latestSpO2 = latestHealth?.spO2 ?? selectedParent?.spO2 ?? null;
+  const latestBloodPressure = latestHealth?.bloodPressure || selectedParent?.bloodPressure || null;
+  const latestActivity = latestHealth?.activity || selectedParent?.activity || null;
+  const medicines = selectedParent?.medicines || [];
+  const appointments = selectedParent?.appointments || [];
+  const selectedParentSos = useMemo(
+    () => sosAlerts.filter((alert) => alert.parentId === selectedParent?._id || alert.parentName === selectedParent?.name),
+    [selectedParent, sosAlerts]
+  );
+  const currentDate = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric" });
 
   return (
     <div className="app-layout">
       <Sidebar onSOSClick={handleSOSClick} />
+      <main className="main-content dashboard-shell">
+        <header className="topbar">
+          <div>
+            <button className="icon-btn" type="button" onClick={() => navigate(-1)} aria-label="Back">‹</button>
+          </div>
+          <div className="topbar-actions">
+            <span className="today-label">{currentDate}</span>
+            <Link className="dashboard-home-btn" to="/" aria-label="Go to landing page without logging out">
+              <span>Home</span>
+            </Link>
+            <button className="btn btn-primary compact" type="button" onClick={() => setShowAddParent(true)}>+ Add Parent</button>
+            <button className="dashboard-logout-btn" type="button" onClick={handleLogout}>Logout</button>
+            <button className="avatar-chip" type="button">{childName.charAt(0).toUpperCase()}</button>
+          </div>
+        </header>
 
-      <main className="main-content" id="dashboard-page">
-        {/* Top Bar */}
-        <div className="dash-topbar">
-          <h1 className="dash-title">Dashboard</h1>
-          <button className="btn btn-primary" id="add-parent-btn" onClick={() => setShowAddParent(true)}>
-            + Add Parent
-          </button>
-        </div>
-
-        {parents.length > 0 && (
-          <div className="parent-search-panel card animate-fade-in">
-            <div className="parent-search-field">
-              <span className="parent-search-icon">Search</span>
+        <section className="dashboard-heading">
+          <h1>Dashboard</h1>
+          <div className="toolbar">
+            <label className="search-box">
+              <span />
               <input
-                type="search"
-                placeholder="Search by name, phone, condition, or code"
                 value={parentSearch}
-                onChange={(e) => setParentSearch(e.target.value)}
+                onChange={(event) => setParentSearch(event.target.value)}
+                placeholder="Search by name, phone, or condition"
+                type="search"
               />
-            </div>
-            <div className="parent-search-controls">
-              <label>
-                <span>Filter</span>
-                <select value={parentFilter} onChange={(e) => setParentFilter(e.target.value)}>
-                  <option value="all">All parents</option>
-                  <option value="sos">Has SOS alert</option>
-                  <option value="orders">Has medicine order</option>
-                  <option value="voice">Has voice message</option>
-                </select>
-              </label>
-              <label>
-                <span>Sort</span>
-                <select value={parentSort} onChange={(e) => setParentSort(e.target.value)}>
-                  <option value="name-asc">Name A-Z</option>
-                  <option value="name-desc">Name Z-A</option>
-                  <option value="age-asc">Age low-high</option>
-                  <option value="age-desc">Age high-low</option>
-                </select>
-              </label>
-            </div>
-            <div className="parent-results-count">
-              Showing {visibleParents.length} of {parents.length} parent{parents.length === 1 ? "" : "s"}
-            </div>
+            </label>
+            <select value={parentFilter} onChange={(event) => setParentFilter(event.target.value)}>
+              <option value="all">Filters</option>
+              <option value="sos">SOS alerts</option>
+              <option value="orders">Medicine orders</option>
+              <option value="voice">Voice messages</option>
+            </select>
+            <select value={parentSort} onChange={(event) => setParentSort(event.target.value)}>
+              <option value="name-asc">Sort</option>
+              <option value="name-desc">Name Z-A</option>
+              <option value="age-asc">Age low-high</option>
+              <option value="age-desc">Age high-low</option>
+            </select>
           </div>
-        )}
+        </section>
 
-        {/* Parents Tabs */}
-        {parents.length > 0 && (
-          <div className="parents-tabs animate-fade-in">
-            {visibleParents.map((p) => (
-              <button
-                key={p._id}
-                className={`parent-tab ${selectedParent?._id === p._id ? "active" : ""}`}
-                onClick={() => setSelectedParent(p)}
-              >
-                <div className="ptab-avatar">{p.name.charAt(0)}</div>
-                <div className="ptab-info">
-                  <span className="ptab-name">{p.name}</span>
-                  <span className="ptab-code">{p.uniqueCode}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {parents.length > 0 && visibleParents.length === 0 && (
-          <div className="empty-state card animate-fade-in parent-empty-results">
-            <h2>No matching parents</h2>
-            <p>Try a different search term, filter, or sort option.</p>
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setParentSearch("");
-                setParentFilter("all");
-                setParentSort("name-asc");
-              }}
-            >
-              Clear Search
-            </button>
-          </div>
-        )}
-
-        {/* No Parents State */}
-        {parents.length === 0 && (
-          <div className="empty-state card animate-fade-in">
-            <div className="empty-icon">👨‍👩‍👧</div>
-            <h2>No Parents Added Yet</h2>
-            <p>Add your first parent to start monitoring their health and safety.</p>
-            <button className="btn btn-primary" onClick={() => setShowAddParent(true)}>
-              + Add Your First Parent
-            </button>
-          </div>
-        )}
-
-        {/* Selected Parent Dashboard */}
-        {selectedParent && (
+        {parents.length === 0 ? (
+          <section className="empty-dashboard">
+            <div className="empty-symbol">+</div>
+            <h2>No parents added yet</h2>
+            <p>Add your first parent to start realtime monitoring.</p>
+            <button className="btn btn-primary" onClick={() => setShowAddParent(true)} type="button">Add Parent</button>
+          </section>
+        ) : (
           <>
-            {/* Profile + Health Score */}
-            <div className="dashboard-top">
-              <div className="profile-card card animate-fade-in">
-                <div className="profile-row">
-                  <div className="profile-avatar">
-                    <div className="avatar-circle">
-                      <span className="avatar-initials">
-                        {selectedParent.name.split(" ").map(n => n[0]).join("")}
-                      </span>
-                    </div>
-                    <div className="avatar-status online"></div>
-                  </div>
-                  <div className="profile-info">
-                    <h1 className="profile-name">{selectedParent.name}</h1>
-                    <div className="profile-meta">
-                      <span className="meta-tag">🎂 Age {selectedParent.age || "N/A"}</span>
-                      <span className="meta-divider">|</span>
-                      <span className="meta-tag">❤️ {selectedParent.conditions || "General Monitoring"}</span>
-                    </div>
-                    <div className="profile-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Blood Type</span>
-                        <span className="detail-value">{selectedParent.bloodType || "N/A"}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Unique ID</span>
-                        <span className="detail-value code-value">{selectedParent.uniqueCode}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Phone</span>
-                        <span className="detail-value">{selectedParent.phone || "N/A"}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="health-score-card animate-slide-right">
-                <div className="score-header">
-                  <span className="score-label">Health Score</span>
-                  <span className="score-badge">Live</span>
-                </div>
-                <div className="score-circle">
-                  <svg viewBox="0 0 120 120" className="score-svg">
-                    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="8"/>
-                    <circle cx="60" cy="60" r="52" fill="none" stroke="white" strokeWidth="8"
-                      strokeDasharray="327" strokeDashoffset={327 - (327 * 94 / 100)}
-                      strokeLinecap="round" transform="rotate(-90 60 60)"
-                      style={{ transition: "stroke-dashoffset 1s ease" }}
-                    />
-                  </svg>
-                  <div className="score-value">
-                    <span className="score-number">94</span>
-                    <span className="score-unit">/100</span>
-                  </div>
-                </div>
-                <p className="score-summary">
-                  {selectedParent.name}'s vitals are within normal range. Keep monitoring.
-                </p>
-              </div>
+            <div className="parent-tabs">
+              {visibleParents.map((parent) => (
+                <button
+                  key={parent._id}
+                  className={`parent-pill ${selectedParent?._id === parent._id ? "active" : ""}`}
+                  onClick={() => setSelectedParentId(parent._id)}
+                  type="button"
+                >
+                  <span>{getInitials(parent.name)}</span>
+                  <strong>{parent.name}</strong>
+                  <small>{parent.uniqueCode}</small>
+                </button>
+              ))}
             </div>
 
-            {/* Stats Row */}
-            <div className="stats-row">
-              {/* Heart Rate */}
-              <div className="stat-card card animate-slide-up" style={{ animationDelay: "0.1s" }}>
-                <div className="stat-header">
-                  <h3>Heart Rate</h3>
-                  <span className="badge badge-success">Normal</span>
-                </div>
-                <div className="stat-main">
-                  <span className="stat-value">{selectedParent.heartRate || liveHeartRate}</span>
-                  <span className="stat-unit">bpm</span>
-                </div>
-                <div className="heart-chart">
-                  {heartRateData.map((val, i) => (
-                    <div key={i} className="chart-bar" style={{
-                      height: `${(val - 55) * 2.5}px`,
-                      background: val > 73 ? 'var(--warning)' : 'var(--primary)',
-                      animationDelay: `${i * 0.05}s`
-                    }}></div>
-                  ))}
-                </div>
-              </div>
+            {selectedParent && (
+              <>
+                <section className="overview-grid">
+                  <article className="patient-card">
+                    <div className="patient-photo">{getInitials(selectedParent.name)}</div>
+                    <div className="patient-info">
+                      <div className="patient-title-row">
+                        <h2>{selectedParent.name}</h2>
+                        <span>Age <strong>{selectedParent.age || "N/A"}</strong></span>
+                      </div>
+                      <div className="tags">
+                        <span>{selectedParent.conditions || "No recorded conditions"}</span>
+                      </div>
+                      <div className="patient-detail-grid">
+                        <span>Blood Type <strong>{selectedParent.bloodType || "Not recorded"}</strong></span>
+                        <span>Patient ID <strong>{selectedParent.uniqueCode}</strong></span>
+                        <span>Contact <strong>{selectedParent.phone || "Not recorded"}</strong></span>
+                      </div>
+                    </div>
+                  </article>
 
-              {/* Vitals */}
-              <div className="stat-card card animate-slide-up" style={{ animationDelay: "0.15s" }}>
-                <div className="stat-header">
-                  <h3>Vitals</h3>
-                  <span className="badge badge-info">Live</span>
-                </div>
-                <div className="vitals-grid">
-                  <div className="vital-item">
-                    <span className="vital-icon">💓</span>
-                    <span className="vital-label">SpO2</span>
-                    <span className="vital-value">{selectedParent.spO2 || 98}%</span>
-                  </div>
-                  <div className="vital-item">
-                    <span className="vital-icon">🩸</span>
-                    <span className="vital-label">BP</span>
-                    <span className="vital-value">{selectedParent.bloodPressure || "120/80"}</span>
-                  </div>
-                  <div className="vital-item">
-                    <span className="vital-icon">🏃</span>
-                    <span className="vital-label">Activity</span>
-                    <span className="vital-value">{selectedParent.activity || "Normal"}</span>
-                  </div>
-                </div>
-              </div>
+                  <article className="wellness-card">
+                    <span>Care Monitoring</span>
+                    <div className="wellness-ring" style={{ "--score": 0 }}>
+                      <strong>--</strong>
+                      <small>health index</small>
+                    </div>
+                    <b>{selectedParentSos.length > 0 ? "Active Alert" : (parentHealthRecords.length > 0 ? `Vitals Logged (${parentHealthRecords.length})` : "No Vitals Logged")}</b>
+                    <Link to="/health-records" style={{ fontSize: "11px", color: "#003883", fontWeight: "700", textDecoration: "none", marginTop: "4px" }}>
+                      View Trend Patterns →
+                    </Link>
+                  </article>
+                </section>
 
-              {/* SOS Alerts */}
-              <div className="stat-card card animate-slide-up" style={{ animationDelay: "0.2s" }}>
-                <div className="stat-header">
-                  <h3>SOS Alerts</h3>
-                  <span className="badge badge-danger">{sosAlerts.length}</span>
-                </div>
-                {sosAlerts.length === 0 ? (
-                  <div className="no-alerts">
-                    <span>✅</span>
-                    <p>No active alerts</p>
-                  </div>
-                ) : (
-                  <div className="alerts-list">
-                    {sosAlerts.slice(0, 3).map((alert, i) => (
-                      <div key={i} className="alert-item alert-danger">
-                        <span className="alert-icon">🚨</span>
-                        <div className="alert-content">
-                          <span className="alert-title">SOS from {alert.parentName}</span>
-                          <span className="alert-desc">{alert.message}</span>
+                <section className="metrics-grid">
+                  <article className="metric-card heart-card">
+                    <div className="metric-head">
+                      <span className="heart-dot" /> <small>{latestHeartRate ? "Latest Reading" : "No Sensor Connected"}</small>
+                    </div>
+                    <div>
+                      <strong>{latestHeartRate !== null && latestHeartRate !== undefined ? latestHeartRate : "--"}</strong>
+                      <span>{latestHeartRate ? "bpm" : "unmeasured"}</span>
+                    </div>
+                    <div className="bar-chart">
+                      {parentHealthRecords.length > 0 && latestHeartRate ? (
+                        parentHealthRecords
+                          .filter((r) => r.heartRate)
+                          .slice(0, 12)
+                          .reverse()
+                          .map((r, index) => {
+                            const h = Math.max(8, Math.min(36, Math.round(((r.heartRate - 40) / 140) * 36)));
+                            return <i key={r._id || index} style={{ height: `${h}px` }} title={`${r.heartRate} bpm`} />;
+                          })
+                      ) : (
+                        <div style={{ fontSize: "11px", color: "#94a3b8", padding: "10px 0", textAlign: "center", width: "100%" }}>
+                          No recorded measurements
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Medicines Section */}
-            <div className="medicines-section card animate-slide-up" style={{ animationDelay: "0.3s" }}>
-              <div className="medicines-header">
-                <h3>💊 Medicines for {selectedParent.name}</h3>
-                <button className="btn btn-primary" id="add-medicine-btn" onClick={() => setShowAddMedicine(true)}>
-                  + Add Medicine
-                </button>
-              </div>
-              {(!selectedParent.medicines || selectedParent.medicines.length === 0) ? (
-                <div className="no-medicines">
-                  <p>No medicines added yet. Add medicines that {selectedParent.name} needs.</p>
-                </div>
-              ) : (
-                <div className="medicines-grid">
-                  {selectedParent.medicines.map((med) => (
-                    <div key={med._id} className="medicine-card">
-                      <div className="med-icon">💊</div>
-                      <div className="med-info">
-                        <span className="med-name">{med.name}</span>
-                        <span className="med-dosage">{med.dosage || "N/A"} • {med.frequency || "Daily"}</span>
-                      </div>
-                      <button className="med-remove" onClick={() => handleRemoveMedicine(med._id)} title="Remove">✕</button>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  </article>
 
-              {/* Medicine Orders from Parents */}
-              {medicineOrders.length > 0 && (
-                <div className="medicine-orders">
-                  <h4>📦 Recent Orders from Parents</h4>
-                  {medicineOrders.map((order, i) => (
-                    <div key={i} className="order-item">
-                      <span className="order-parent">🛒 {order.parentName} ordered:</span>
-                      <span className="order-meds">
-                        {order.medicines.map(m => m.name).join(", ")}
-                      </span>
-                      <span className="order-time">
-                        {new Date(order.time).toLocaleTimeString()}
-                      </span>
+                  <article className="metric-card vitals-card">
+                    <Metric label="SpO2" value={latestSpO2 !== null && latestSpO2 !== undefined ? `${latestSpO2}%` : "Not measured"} />
+                    <Metric label="Blood Pressure" value={latestBloodPressure || "Not measured"} />
+                    <Metric label="Activity" value={latestActivity || "Not measured"} />
+                    <button
+                      type="button"
+                      style={{
+                        marginTop: "6px",
+                        fontSize: "11.5px",
+                        background: "none",
+                        border: "none",
+                        color: "#003883",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        padding: 0,
+                        textAlign: "left"
+                      }}
+                      onClick={() => setShowAddHealth(true)}
+                    >
+                      + Record Vitals
+                    </button>
+                  </article>
+
+                  <article className="metric-card alerts-card">
+                    <span className="check-circle">{sosAlerts.length ? "!" : "OK"}</span>
+                    <strong>{sosAlerts.length ? `${sosAlerts.length} active alert(s)` : "No active alerts"}</strong>
+                    <small>{sosAlerts.length ? "Review emergency activity." : "Everything looks safe."}</small>
+                    {selectedParentSos.length > 0 && (
                       <button
-                        className="buy-medicine-btn"
-                        onClick={() => openBuySearch(order.medicines.map(m => m.name).join(" "))}
+                        type="button"
+                        style={{
+                          marginTop: "6px",
+                          fontSize: "11px",
+                          background: "#dc2626",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "4px",
+                          padding: "4px 10px",
+                          cursor: "pointer",
+                          fontWeight: "700"
+                        }}
+                        onClick={() => handleResolveSOS(selectedParentSos[0]?.sosId || selectedParentSos[0]?._id)}
                       >
-                        Buy
+                        Resolve Alert
                       </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    )}
+                  </article>
+                </section>
 
-            {voiceMessages.length > 0 && (
-              <div className="voice-messages-section card animate-slide-up" style={{ animationDelay: "0.32s" }}>
-                <div className="medicines-header">
-                  <h3>Voice Messages from Parents</h3>
-                  <span className="badge badge-info">{voiceMessages.length}</span>
-                </div>
-                <div className="voice-message-list">
-                  {voiceMessages.slice(0, 5).map((message, i) => (
-                    <div key={i} className="voice-message-card">
-                      <div>
-                        <strong>Voice message from {message.parentName}</strong>
-                        <p>{message.translatedText}</p>
-                        {message.originalText && (
-                          <small>Heard: {message.originalText}</small>
-                        )}
+                {/* AI Health Insights Powered by NVIDIA Nemotron */}
+                <AiHealthInsights
+                  key={`insights-${selectedParent._id}`}
+                  parent={selectedParent}
+                  onRecordVitals={() => setShowAddHealth(true)}
+                />
+
+                {/* AI Caregiver Assistant (Conversational) */}
+                <AiCaregiverAssistant
+                  key={`assistant-${selectedParent._id}`}
+                  parent={selectedParent}
+                />
+
+                <section className="dashboard-two-col">
+                  <Panel title="Daily Medicines" action="+ Add Medicine" onAction={() => setShowAddMedicine(true)}>
+                    {medicines.length ? (
+                      <div className="medicine-list">
+                        {medicines.map((medicine) => (
+                          <div className="medicine-row" key={medicine._id}>
+                            <span>Rx</span>
+                            <b>{medicine.name}</b>
+                            <small>{medicine.dosage || "Dose not set"} / {medicine.frequency || "Daily"}</small>
+                            <button onClick={() => handleRemoveMedicine(medicine._id)} type="button">Remove</button>
+                          </div>
+                        ))}
                       </div>
-                      <span>{new Date(message.time).toLocaleTimeString()}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ) : (
+                      <EmptyPanel icon="Rx" text="No medicines added for today." />
+                    )}
+                  </Panel>
+
+                  <Panel title="Upcoming Appointments" action="+ Add Appointment" onAction={() => setShowAppointment(true)}>
+                    {appointments.length ? (
+                      <div className="appointment-list">
+                        {appointments.slice(-3).map((appointment) => (
+                          <div className="appointment-row" key={appointment._id}>
+                            <b>{appointment.doctorName}</b>
+                            <small>{appointment.specialty || "Doctor visit"} / {appointment.date} at {appointment.time}</small>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyPanel icon="Cal" text="No upcoming appointments found." />
+                    )}
+                  </Panel>
+                </section>
+
+                <section className="reminder-strip">
+                  <Reminder title="Water Intake" value={selectedParent.reminders?.water?.enabled ? `Every ${selectedParent.reminders.water.intervalMinutes || 60} min` : "Not configured"} />
+                  <Reminder title="Meal Schedule" value={selectedParent.reminders?.food?.breakfast ? "Configured" : "Not configured"} />
+                  <Reminder title="Medication Alerts" value={`${selectedParent.reminders?.medicines?.length || 0} configured`} />
+                  <button className="reminder-manage" type="button" onClick={openReminderSettings}>Manage</button>
+                </section>
+
+                {(medicineOrders.length > 0 || voiceMessages.length > 0) && (
+                  <section className="activity-feed">
+                    {medicineOrders.slice(0, 3).map((order, index) => (
+                      <div key={`order-${index}`}>Medicine order from {order.parentName}: {order.medicines?.map((m) => m.name).join(", ")}</div>
+                    ))}
+                    {voiceMessages.slice(0, 3).map((message, index) => (
+                      <div key={`voice-${index}`}>Voice message from {message.parentName}: {message.translatedText}</div>
+                    ))}
+                  </section>
+                )}
+              </>
             )}
-
-            <div className="appointments-section card animate-slide-up" style={{ animationDelay: "0.34s" }}>
-              <div className="medicines-header">
-                <h3>Doctor Appointments for {selectedParent.name}</h3>
-                <button className="btn btn-primary" onClick={() => setShowAppointment(true)}>
-                  + Add Appointment
-                </button>
-              </div>
-              {selectedParent.appointments?.length ? (
-                <div className="appointment-list">
-                  {selectedParent.appointments.slice(-3).map((appointment) => (
-                    <div key={appointment._id} className="appointment-card">
-                      <strong>{appointment.doctorName}</strong>
-                      <span>{appointment.specialty || "Doctor visit"}</span>
-                      <small>{appointment.date} at {appointment.time}</small>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="no-medicines">
-                  <p>No doctor appointments added yet.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Reminders Section */}
-            <div className="reminders-section card animate-slide-up" style={{ animationDelay: "0.35s" }}>
-              <div className="medicines-header">
-                <h3>Care Reminders for {selectedParent.name}</h3>
-                <button className="btn btn-primary" id="manage-reminders-btn" onClick={openReminderSettings}>
-                  Manage Reminders
-                </button>
-              </div>
-              <div className="reminder-summary-grid">
-                <div className="reminder-summary-card">
-                  <span className="reminder-summary-icon">Water</span>
-                  <strong>Drink Water</strong>
-                  <small>
-                    {selectedParent.reminders?.water?.enabled
-                      ? `Every ${selectedParent.reminders.water.intervalMinutes || 60} min`
-                      : "Not configured"}
-                  </small>
-                </div>
-                <div className="reminder-summary-card">
-                  <span className="reminder-summary-icon">Food</span>
-                  <strong>Food Intake</strong>
-                  <small>
-                    {selectedParent.reminders?.food?.breakfast || selectedParent.reminders?.food?.lunch || selectedParent.reminders?.food?.dinner
-                      ? "Breakfast, lunch, dinner set"
-                      : "Not configured"}
-                  </small>
-                </div>
-                <div className="reminder-summary-card">
-                  <span className="reminder-summary-icon">Meds</span>
-                  <strong>Medicine Reminders</strong>
-                  <small>{selectedParent.reminders?.medicines?.length || 0} medicine reminder(s)</small>
-                </div>
-              </div>
-            </div>
           </>
         )}
       </main>
 
-      {/* ADD PARENT MODAL */}
       {showAddParent && (
-        <div className="modal-overlay" id="add-parent-modal">
-          <div className="modal-container form-modal animate-modal">
-            <div className="modal-header">
-              <h2>Add New Parent</h2>
-              <button className="modal-close" onClick={() => setShowAddParent(false)}>✕</button>
+        <Modal title="Add New Parent" onClose={() => setShowAddParent(false)}>
+          <form onSubmit={handleCreateParent} className="modal-form">
+            <label>Full Name<input required value={newParent.name} onChange={(e) => setNewParent({ ...newParent, name: e.target.value })} /></label>
+            <div className="form-row">
+              <label>Age<input type="number" value={newParent.age} onChange={(e) => setNewParent({ ...newParent, age: e.target.value })} /></label>
+              <label>Blood Type<select value={newParent.bloodType} onChange={(e) => setNewParent({ ...newParent, bloodType: e.target.value })}><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option></select></label>
             </div>
-            <form onSubmit={handleCreateParent} className="modal-form">
-              <div className="form-group">
-                <label>Full Name *</label>
-                <input type="text" placeholder="e.g. Arthur Miller" required
-                  value={newParent.name} onChange={e => setNewParent({ ...newParent, name: e.target.value })} />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Age</label>
-                  <input type="number" placeholder="e.g. 72"
-                    value={newParent.age} onChange={e => setNewParent({ ...newParent, age: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label>Blood Type</label>
-                  <select value={newParent.bloodType} onChange={e => setNewParent({ ...newParent, bloodType: e.target.value })}>
-                    <option>O+</option><option>O-</option><option>A+</option><option>A-</option>
-                    <option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Phone Number</label>
-                <input type="text" placeholder="e.g. +91 98765 43210"
-                  value={newParent.phone} onChange={e => setNewParent({ ...newParent, phone: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label>Health Conditions</label>
-                <input type="text" placeholder="e.g. Heart Condition, Diabetes"
-                  value={newParent.conditions} onChange={e => setNewParent({ ...newParent, conditions: e.target.value })} />
-              </div>
-              <button type="submit" className="btn btn-primary modal-submit">Create Parent</button>
-              <p className="modal-hint">A unique code will be generated to link the parent's device.</p>
-            </form>
-          </div>
-        </div>
+            <label>Phone<input value={newParent.phone} onChange={(e) => setNewParent({ ...newParent, phone: e.target.value })} /></label>
+            <label>Health Conditions<input value={newParent.conditions} onChange={(e) => setNewParent({ ...newParent, conditions: e.target.value })} /></label>
+            <button className="btn btn-primary" type="submit">Generate Parent Code</button>
+          </form>
+        </Modal>
       )}
 
-      {/* ADD MEDICINE MODAL */}
       {showAddMedicine && (
-        <div className="modal-overlay" id="add-medicine-modal">
-          <div className="modal-container form-modal animate-modal">
-            <div className="modal-header">
-              <h2>Add Medicine for {selectedParent?.name}</h2>
-              <button className="modal-close" onClick={() => setShowAddMedicine(false)}>✕</button>
+        <Modal title={`Add Medicine for ${selectedParent?.name || "Parent"}`} onClose={() => setShowAddMedicine(false)}>
+          <form onSubmit={handleAddMedicine} className="modal-form">
+            <label>Medicine Name<input required value={newMedicine.name} onChange={(e) => setNewMedicine({ ...newMedicine, name: e.target.value })} /></label>
+            <div className="form-row">
+              <label>Dosage<input value={newMedicine.dosage} onChange={(e) => setNewMedicine({ ...newMedicine, dosage: e.target.value })} /></label>
+              <label>Frequency<select value={newMedicine.frequency} onChange={(e) => setNewMedicine({ ...newMedicine, frequency: e.target.value })}><option>Daily</option><option>Twice Daily</option><option>Weekly</option><option>As Needed</option></select></label>
             </div>
-            <form onSubmit={handleAddMedicine} className="modal-form">
-              <div className="form-group">
-                <label>Medicine Name *</label>
-                <input type="text" placeholder="e.g. Metformin" required
-                  value={newMedicine.name} onChange={e => setNewMedicine({ ...newMedicine, name: e.target.value })} />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Dosage</label>
-                  <input type="text" placeholder="e.g. 500mg"
-                    value={newMedicine.dosage} onChange={e => setNewMedicine({ ...newMedicine, dosage: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label>Frequency</label>
-                  <select value={newMedicine.frequency} onChange={e => setNewMedicine({ ...newMedicine, frequency: e.target.value })}>
-                    <option>Daily</option><option>Twice Daily</option><option>Weekly</option><option>As Needed</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" className="btn btn-primary modal-submit">Add Medicine</button>
-            </form>
-          </div>
-        </div>
+            <button className="btn btn-primary" type="submit">Add Medicine</button>
+          </form>
+        </Modal>
       )}
 
-      {/* REMINDERS MODAL */}
-      {showReminders && (
-        <div className="modal-overlay" id="reminders-modal">
-          <div className="modal-container form-modal reminders-modal animate-modal">
-            <div className="modal-header">
-              <h2>Manage Reminders for {selectedParent?.name}</h2>
-              <button className="modal-close" onClick={() => setShowReminders(false)}>×</button>
-            </div>
-            <form onSubmit={handleSaveReminders} className="modal-form">
-              <section className="reminder-form-section">
-                <h3>Medicine Reminders</h3>
-                {reminderForm.medicines.map((med, index) => (
-                  <div className="medicine-reminder-row" key={index}>
-                    <div className="form-group">
-                      <label>Name of the Medicine</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Metformin"
-                        value={med.name}
-                        onChange={e => updateMedicineReminder(index, "name", e.target.value)}
-                      />
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Timings</label>
-                        <input
-                          type="text"
-                          placeholder="08:00, 20:00"
-                          value={med.times}
-                          onChange={e => updateMedicineReminder(index, "times", e.target.value)}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>How many times</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={med.timesPerDay}
-                          onChange={e => updateMedicineReminder(index, "timesPerDay", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    {reminderForm.medicines.length > 1 && (
-                      <button type="button" className="btn btn-outline" onClick={() => removeMedicineReminderRow(index)}>
-                        Remove Medicine
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button type="button" className="btn btn-outline" onClick={addMedicineReminderRow}>
-                  + Add Another Medicine
-                </button>
-              </section>
-
-              <section className="reminder-form-section">
-                <h3>Water Reminder</h3>
-                <label className="reminder-toggle">
-                  <input
-                    type="checkbox"
-                    checked={reminderForm.water.enabled}
-                    onChange={e => setReminderForm(prev => ({
-                      ...prev,
-                      water: { ...prev.water, enabled: e.target.checked }
-                    }))}
-                  />
-                  Notify parent to drink water
-                </label>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>How often to remind</label>
-                    <select
-                      value={reminderForm.water.intervalMinutes}
-                      onChange={e => setReminderForm(prev => ({
-                        ...prev,
-                        water: { ...prev.water, intervalMinutes: e.target.value }
-                      }))}
-                    >
-                      <option value="30">Every 30 minutes</option>
-                      <option value="60">Every hour</option>
-                      <option value="120">Every 2 hours</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Active from</label>
-                    <input
-                      type="time"
-                      value={reminderForm.water.startTime}
-                      onChange={e => setReminderForm(prev => ({
-                        ...prev,
-                        water: { ...prev.water, startTime: e.target.value }
-                      }))}
-                    />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Active until</label>
-                  <input
-                    type="time"
-                    value={reminderForm.water.endTime}
-                    onChange={e => setReminderForm(prev => ({
-                      ...prev,
-                      water: { ...prev.water, endTime: e.target.value }
-                    }))}
-                  />
-                </div>
-              </section>
-
-              <section className="reminder-form-section">
-                <h3>Food Reminder</h3>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Breakfast</label>
-                    <input
-                      type="time"
-                      value={reminderForm.food.breakfast}
-                      onChange={e => setReminderForm(prev => ({
-                        ...prev,
-                        food: { ...prev.food, breakfast: e.target.value }
-                      }))}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Lunch</label>
-                    <input
-                      type="time"
-                      value={reminderForm.food.lunch}
-                      onChange={e => setReminderForm(prev => ({
-                        ...prev,
-                        food: { ...prev.food, lunch: e.target.value }
-                      }))}
-                    />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Dinner</label>
-                  <input
-                    type="time"
-                    value={reminderForm.food.dinner}
-                    onChange={e => setReminderForm(prev => ({
-                      ...prev,
-                      food: { ...prev.food, dinner: e.target.value }
-                    }))}
-                  />
-                </div>
-              </section>
-
-              <button type="submit" className="btn btn-primary modal-submit">Save Reminders</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ADD APPOINTMENT MODAL */}
       {showAppointment && (
-        <div className="modal-overlay" id="appointment-modal">
-          <div className="modal-container form-modal animate-modal">
-            <div className="modal-header">
-              <h2>Add Doctor Appointment</h2>
-              <button className="modal-close" onClick={() => setShowAppointment(false)}>×</button>
+        <Modal title="Add Appointment" onClose={() => setShowAppointment(false)}>
+          <form onSubmit={handleAddAppointment} className="modal-form">
+            <label>Doctor Name<input required value={newAppointment.doctorName} onChange={(e) => setNewAppointment({ ...newAppointment, doctorName: e.target.value })} /></label>
+            <label>Specialty<input value={newAppointment.specialty} onChange={(e) => setNewAppointment({ ...newAppointment, specialty: e.target.value })} /></label>
+            <div className="form-row">
+              <label>Date<input required type="date" value={newAppointment.date} onChange={(e) => setNewAppointment({ ...newAppointment, date: e.target.value })} /></label>
+              <label>Time<input required type="time" value={newAppointment.time} onChange={(e) => setNewAppointment({ ...newAppointment, time: e.target.value })} /></label>
             </div>
-            <form onSubmit={handleAddAppointment} className="modal-form">
-              <div className="form-group">
-                <label>Doctor Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Dr. Rao"
-                  value={newAppointment.doctorName}
-                  onChange={e => setNewAppointment({ ...newAppointment, doctorName: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label>Specialty</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Cardiologist"
-                  value={newAppointment.specialty}
-                  onChange={e => setNewAppointment({ ...newAppointment, specialty: e.target.value })}
-                />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={newAppointment.date}
-                    onChange={e => setNewAppointment({ ...newAppointment, date: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Time *</label>
-                  <input
-                    type="time"
-                    required
-                    value={newAppointment.time}
-                    onChange={e => setNewAppointment({ ...newAppointment, time: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Notes</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Carry reports"
-                  value={newAppointment.notes}
-                  onChange={e => setNewAppointment({ ...newAppointment, notes: e.target.value })}
-                />
-              </div>
-              <button type="submit" className="btn btn-primary modal-submit">Save Appointment</button>
-            </form>
-          </div>
-        </div>
+            <label>Notes<input value={newAppointment.notes} onChange={(e) => setNewAppointment({ ...newAppointment, notes: e.target.value })} /></label>
+            <button className="btn btn-primary" type="submit">Save Appointment</button>
+          </form>
+        </Modal>
       )}
 
-      {/* Alert Modals */}
+      {showReminders && (
+        <Modal title={`Manage Reminders for ${selectedParent?.name || "Parent"}`} onClose={() => setShowReminders(false)}>
+          <form onSubmit={handleSaveReminders} className="modal-form">
+            {reminderForm.medicines.map((medicine, index) => (
+              <div className="reminder-editor" key={index}>
+                <label>Medicine<input value={medicine.name} onChange={(e) => updateMedicineReminder(index, "name", e.target.value)} /></label>
+                <div className="form-row">
+                  <label>Times<input value={medicine.times} onChange={(e) => updateMedicineReminder(index, "times", e.target.value)} /></label>
+                  <label>Per Day<input type="number" min="1" value={medicine.timesPerDay} onChange={(e) => updateMedicineReminder(index, "timesPerDay", e.target.value)} /></label>
+                </div>
+              </div>
+            ))}
+            <button type="button" className="btn btn-outline" onClick={() => setReminderForm((prev) => ({ ...prev, medicines: [...prev.medicines, { name: "", times: "08:00", timesPerDay: 1 }] }))}>Add Another Medicine</button>
+            <div className="form-row">
+              <label>Water Every<select value={reminderForm.water.intervalMinutes} onChange={(e) => setReminderForm((prev) => ({ ...prev, water: { ...prev.water, intervalMinutes: e.target.value } }))}><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option></select></label>
+              <label>Breakfast<input type="time" value={reminderForm.food.breakfast} onChange={(e) => setReminderForm((prev) => ({ ...prev, food: { ...prev.food, breakfast: e.target.value } }))} /></label>
+            </div>
+            <button className="btn btn-primary" type="submit">Save Reminders</button>
+          </form>
+        </Modal>
+      )}
+
+      {showAddHealth && (
+        <Modal title={`Record Health Reading for ${selectedParent?.name || "Parent"}`} onClose={() => setShowAddHealth(false)}>
+          <form onSubmit={handleAddHealth} className="modal-form">
+            <div className="form-row">
+              <label>Heart Rate (bpm)
+                <input
+                  type="number"
+                  min="30"
+                  max="250"
+                  placeholder="e.g. 74"
+                  value={newHealth.heartRate}
+                  onChange={(e) => setNewHealth((prev) => ({ ...prev, heartRate: e.target.value }))}
+                />
+              </label>
+              <label>SpO2 Level (%)
+                <input
+                  type="number"
+                  min="50"
+                  max="100"
+                  placeholder="e.g. 98"
+                  value={newHealth.spO2}
+                  onChange={(e) => setNewHealth((prev) => ({ ...prev, spO2: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="form-row">
+              <label>Blood Pressure (SYS/DIA)
+                <input
+                  placeholder="e.g. 120/80"
+                  value={newHealth.bloodPressure}
+                  onChange={(e) => setNewHealth((prev) => ({ ...prev, bloodPressure: e.target.value }))}
+                />
+              </label>
+              <label>Steps Walked
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 3500"
+                  value={newHealth.steps}
+                  onChange={(e) => setNewHealth((prev) => ({ ...prev, steps: e.target.value }))}
+                />
+              </label>
+            </div>
+            <label>Activity / Routine Note
+              <input
+                placeholder="e.g. Morning 20-min garden walk, resting comfortably"
+                value={newHealth.activity}
+                onChange={(e) => setNewHealth((prev) => ({ ...prev, activity: e.target.value }))}
+              />
+            </label>
+            <button className="btn btn-primary" type="submit">Save Health Reading</button>
+          </form>
+        </Modal>
+      )}
+
       {showFallModal && (
         <FallDetectionModal
           parentName={sosAlerts[0]?.parentName || "Parent"}
-          onClose={() => setShowFallModal(false)}
+          onClose={() => {
+            const idToResolve = sosAlerts[0]?.sosId || sosAlerts[0]?._id;
+            if (idToResolve) handleResolveSOS(idToResolve);
+            setShowFallModal(false);
+          }}
           onTriggerSOS={() => { setShowFallModal(false); setShowEmergencyModal(true); }}
         />
       )}
@@ -1018,6 +759,62 @@ export default function Dashboard() {
           childPhone={childPhone}
         />
       )}
+    </div>
+  );
+}
+
+function Metric({ label, value }) {
+  return (
+    <div className="vital-row">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function Panel({ title, action, onAction, children }) {
+  return (
+    <article className="dash-panel">
+      <div className="panel-header">
+        <h3>{title}</h3>
+      </div>
+      {children}
+      <button className="panel-action" type="button" onClick={onAction}>{action}</button>
+    </article>
+  );
+}
+
+function EmptyPanel({ icon, text }) {
+  return (
+    <div className="panel-empty">
+      <span>{icon}</span>
+      <p>{text}</p>
+    </div>
+  );
+}
+
+function Reminder({ title, value }) {
+  return (
+    <article className="reminder-card">
+      <span />
+      <div>
+        <strong>{title}</strong>
+        <small>{value}</small>
+      </div>
+    </article>
+  );
+}
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container form-modal">
+        <div className="modal-header">
+          <h2>{title}</h2>
+          <button type="button" onClick={onClose}>x</button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }

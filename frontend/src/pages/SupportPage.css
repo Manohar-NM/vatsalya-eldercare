@@ -1,0 +1,473 @@
+/* ─────────────────────────────────────────
+   Shared
+───────────────────────────────────────── */
+.sp-page {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  background: #f7f9fc;
+  color: #081327;
+  overflow-x: hidden;
+}
+
+.sp-nav {
+  height: 58px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid #e4eaf3;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.sp-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #003883;
+  font-weight: 800;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.sp-brand span {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #003883;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.sp-back {
+  border: 1px solid #dfe6f1;
+  border-radius: 6px;
+  color: #003883;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+/* ─────────────────────────────────────────
+   HC1 — Help Center
+───────────────────────────────────────── */
+.hc-hero {
+  background: #003883;
+  width: 100%;
+  padding: 56px 5vw 52px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.hc-pill {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 14px;
+  margin-bottom: 14px;
+}
+
+.hc-hero h1 {
+  color: #ffffff;
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.hc-hero p {
+  color: #a8c4f0;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.hc-search {
+  display: flex;
+  max-width: 520px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.hc-search input {
+  flex: 1;
+  border: none;
+  padding: 13px 18px;
+  font-size: 13px;
+  outline: none;
+  color: #081327;
+}
+
+.hc-search button {
+  background: #f59e0b;
+  color: #ffffff;
+  border: none;
+  padding: 0 24px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.hc-topics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  padding: 36px 5vw 56px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hc-topic {
+  background: #ffffff;
+  border: 1px solid #e4eaf3;
+  border-radius: 12px;
+  padding: 22px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.hc-topic-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.hc-topic h3 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #081327;
+  margin-bottom: 5px;
+}
+
+.hc-topic p {
+  font-size: 12px;
+  color: #667085;
+  line-height: 1.65;
+}
+
+/* ─────────────────────────────────────────
+   EG1 — Emergency Guide
+───────────────────────────────────────── */
+.eg-hero {
+  background: #c22833;
+  width: 100%;
+  padding: 56px 5vw 48px;
+  box-sizing: border-box;
+}
+
+.eg-pill {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 14px;
+  margin-bottom: 14px;
+}
+
+.eg-hero h1 {
+  color: #ffffff;
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.eg-hero p {
+  color: #ffc9cb;
+  font-size: 14px;
+  max-width: 580px;
+  line-height: 1.7;
+}
+
+.eg-sos-banner {
+  background: #fff5f5;
+  border: 1.5px solid #fbc8cb;
+  border-radius: 12px;
+  margin: 28px 5vw;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.eg-sos-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #c22833;
+  flex-shrink: 0;
+}
+
+.eg-sos-banner strong {
+  display: block;
+  font-size: 13px;
+  color: #081327;
+  margin-bottom: 3px;
+}
+
+.eg-sos-banner small {
+  font-size: 12px;
+  color: #667085;
+}
+
+.eg-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 0 5vw 56px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.eg-step {
+  background: #ffffff;
+  border: 1px solid #e4eaf3;
+  border-radius: 12px;
+  padding: 28px 22px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.eg-step-num {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: #c22833;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+
+.eg-step h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #081327;
+  margin-bottom: 8px;
+}
+
+.eg-step p {
+  font-size: 13px;
+  color: #667085;
+  line-height: 1.7;
+}
+
+/* ─────────────────────────────────────────
+   AC1 — Accessibility
+───────────────────────────────────────── */
+.ac-hero {
+  background: #003883;
+  width: 100%;
+  padding: 56px 5vw 48px;
+  box-sizing: border-box;
+}
+
+.ac-pill {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 14px;
+  margin-bottom: 14px;
+}
+
+.ac-hero h1 {
+  color: #ffffff;
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.ac-hero p {
+  color: #a8c4f0;
+  font-size: 14px;
+  max-width: 580px;
+  line-height: 1.7;
+}
+
+.ac-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  padding: 36px 5vw 56px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ac-feat {
+  background: #ffffff;
+  border: 1px solid #e4eaf3;
+  border-radius: 12px;
+  padding: 22px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.ac-feat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.ac-b { background: #edf3ff; }
+.ac-g { background: #ecfdf3; }
+.ac-p { background: #f5f0ff; }
+.ac-a { background: #fffbeb; }
+
+.ac-feat h3 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #081327;
+  margin-bottom: 5px;
+}
+
+.ac-feat p {
+  font-size: 12px;
+  color: #667085;
+  line-height: 1.65;
+}
+
+/* ─────────────────────────────────────────
+   CM1 — Community
+───────────────────────────────────────── */
+.cm-hero {
+  background: linear-gradient(135deg, #003883, #1e5bb0);
+  width: 100%;
+  padding: 56px 5vw 52px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.cm-pill {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 14px;
+  margin-bottom: 14px;
+}
+
+.cm-hero h1 {
+  color: #ffffff;
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.cm-hero p {
+  color: #a8c4f0;
+  font-size: 14px;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.cm-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 36px 5vw 56px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cm-card {
+  background: #ffffff;
+  border: 1px solid #e4eaf3;
+  border-radius: 12px;
+  padding: 28px 22px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.cm-card-icon {
+  font-size: 32px;
+}
+
+.cm-card h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #081327;
+}
+
+.cm-card p {
+  font-size: 13px;
+  color: #667085;
+  line-height: 1.65;
+}
+
+.cm-btn {
+  display: inline-block;
+  background: #edf3ff;
+  color: #003883;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+───────────────────────────────────────── */
+@media (max-width: 820px) {
+  .sp-nav {
+    padding: 0 18px;
+  }
+
+  .hc-topics,
+  .eg-steps,
+  .cm-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .ac-features {
+    grid-template-columns: 1fr;
+  }
+
+  .hc-hero,
+  .eg-hero,
+  .ac-hero,
+  .cm-hero {
+    padding: 40px 20px 36px;
+  }
+
+  .hc-topics,
+  .eg-sos-banner,
+  .eg-steps,
+  .ac-features,
+  .cm-cards {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}

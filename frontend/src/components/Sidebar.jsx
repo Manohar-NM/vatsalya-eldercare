@@ -1,75 +1,45 @@
-import { NavLink, useNavigate } from "react-router-dom";
-import vatsalyaLogo from "../assets/vatsalya-logo.jpeg";
+import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 
-export default function Sidebar({ onSOSClick }) {
-  const navigate = useNavigate();
-  const userName = localStorage.getItem("userName") || "Caregiver";
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/");
-  };
+export default function Sidebar() {
+  const userName = localStorage.getItem("userName") || "Ananya Vatsalya";
 
   const navItems = [
-    { path: "/dashboard", icon: "📊", label: "Dashboard" },
-    { path: "/health-records", icon: "📋", label: "Health Records" },
-    { path: "/care-team", icon: "👥", label: "Care Team" },
-    { path: "/settings", icon: "⚙️", label: "Settings" },
+    { path: "/dashboard", icon: "grid", label: "Dashboard" },
+    { path: "/health-records", icon: "file", label: "Health Records" },
+    { path: "/care-team", icon: "team", label: "Care Team" },
+    { path: "/settings", icon: "gear", label: "Settings" }
   ];
 
   return (
-    <aside className="sidebar" id="sidebar">
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="logo-icon">
-          <img src={vatsalyaLogo} alt="Vatsalya logo" />
-        </div>
-        <span className="logo-text">Vatsalya</span>
+    <aside className="sidebar">
+      <div className="sidebar-brand">
+        <strong>Vatsalya</strong>
+        <span>Caregiver Portal</span>
       </div>
 
-      {/* User Info */}
-      <div className="sidebar-user">
-        <div className="user-avatar">
-          {userName.charAt(0).toUpperCase()}
-        </div>
-        <div className="user-info">
-          <span className="user-name">{userName}</span>
-          <span className="user-role">Caregiver Portal</span>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label="Primary">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-            id={`nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+            className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
           >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
+            <span className={`nav-glyph nav-${item.icon}`} aria-hidden="true" />
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
-      {/* SOS Button */}
-      <div className="sidebar-sos">
-        <button className="sos-button" id="sos-trigger-btn" onClick={onSOSClick}>
-          <span className="sos-pulse"></span>
-          <span className="sos-icon">🚨</span>
-          <span className="sos-text">Emergency SOS</span>
-        </button>
+      <div className="sidebar-footer">
+        <div className="sidebar-profile" title="Caregiver profile">
+          <span className="profile-dot">{userName.charAt(0).toUpperCase()}</span>
+          <span>
+            <strong>{userName}</strong>
+            <small>Primary caregiver</small>
+          </span>
+        </div>
       </div>
-
-      {/* Logout */}
-      <button className="sidebar-logout" id="logout-btn" onClick={handleLogout}>
-        <span>🚪</span>
-        <span>Logout</span>
-      </button>
     </aside>
   );
 }

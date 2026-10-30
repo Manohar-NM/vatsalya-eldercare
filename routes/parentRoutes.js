@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middleware/authMiddleware");
+const { protect, authenticateDeviceOrCaregiver } = require("../middleware/authMiddleware");
+const { deviceLoginLimiter } = require("../middleware/rateLimitMiddleware");
 
 const {
     createParent,
@@ -31,12 +32,13 @@ router.get("/:parentId", protect, getParentById);
 router.post("/:parentId/medicine", protect, addMedicine);
 router.delete("/:parentId/medicine/:medicineId", protect, removeMedicine);
 
-// ===== PARENT DEVICE ROUTES - No auth needed =====
-router.post("/device/login", loginByCode);
+// ===== PARENT DEVICE ROUTES =====
+router.post("/device/login", deviceLoginLimiter, loginByCode);
 router.post("/device/order", orderMedicines);
 router.post("/device/voice-message", sendVoiceMessage);
 router.post("/device/activity", addActivity);
 router.put("/device/:parentId/activity/:activityId", updateActivity);
-router.put("/device/:parentId/health", updateHealth);
+// Health updates require device authentication or caregiver token
+router.put("/device/:parentId/health", authenticateDeviceOrCaregiver, updateHealth);
 
 module.exports = router;

@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 const { createSOS, getSOS, resolveSOS } = require("../controllers/sosController");
 const { protect } = require("../middleware/authMiddleware");
+const { sosLimiter } = require("../middleware/rateLimitMiddleware");
 
-// Parent device triggers SOS (no auth - uses parentId)
-router.post("/trigger", createSOS);
+// Parent device triggers SOS (rate-limited against flood/DoS while allowing emergency bursts)
+router.post("/trigger", sosLimiter, createSOS);
 
 // Child gets their SOS alerts (protected)
 router.get("/", protect, getSOS);
