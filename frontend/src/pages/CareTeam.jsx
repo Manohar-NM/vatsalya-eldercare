@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import API from "../services/api";
 import EmergencyAlertModal from "../components/EmergencyAlertModal";
@@ -16,7 +15,6 @@ const buildNearbyHospitalsUrl = (locationText) => {
 };
 
 export default function CareTeam() {
-  const navigate = useNavigate();
   const [showEmergency, setShowEmergency] = useState(false);
   const [parents, setParents] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState("");
@@ -50,8 +48,13 @@ export default function CareTeam() {
         reject(new Error("Location is not supported in this browser."));
         return;
       }
+
       navigator.geolocation.getCurrentPosition(
-        (position) => resolve({ lat: position.coords.latitude, lon: position.coords.longitude, label: "current device location" }),
+        (position) => resolve({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+          label: "current device location"
+        }),
         () => reject(new Error("Allow location access or add the parent's location in settings.")),
         { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
       );
@@ -60,8 +63,14 @@ export default function CareTeam() {
   const fetchNearbyHospitals = async (origin, locationOverride = "") => {
     const savedLocation = locationOverride || locationInput.trim() || selectedParent?.location || "";
     const res = await API.get("/nearby/hospitals", {
-      params: { lat: origin?.lat, lon: origin?.lon, label: origin?.label, location: savedLocation }
+      params: {
+        lat: origin?.lat,
+        lon: origin?.lon,
+        label: origin?.label,
+        location: savedLocation
+      }
     });
+
     return res.data;
   };
 
@@ -70,9 +79,11 @@ export default function CareTeam() {
     setHospitalError("");
     setResolvedOrigin(null);
     setDispatchStatus("");
+
     try {
       let origin = null;
       const activeLocation = locationOverride || locationInput.trim() || selectedParent?.location || "";
+
       if (!activeLocation) {
         try {
           origin = await getBrowserLocation();
@@ -80,11 +91,16 @@ export default function CareTeam() {
           origin = null;
         }
       }
+
       const result = await fetchNearbyHospitals(origin, activeLocation);
       const results = result.hospitals || [];
+
       setHospitals(results);
       setResolvedOrigin(result.origin || null);
-      if (!results.length) setHospitalError("No hospitals were found within 10 km of this location.");
+
+      if (!results.length) {
+        setHospitalError("No hospitals were found within 10 km of this location.");
+      }
     } catch (err) {
       setHospitals([]);
       setHospitalError(err.response?.data?.message || err.message || "Unable to load nearby hospitals.");
@@ -92,13 +108,6 @@ export default function CareTeam() {
       setLoadingHospitals(false);
     }
   };
-
-  useEffect(() => {
-    if (!selectedParent) return undefined;
-    const timer = setTimeout(() => loadHospitals(), 0);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedParent?._id]);
 
   const selectParent = (parentId) => {
     const nextParent = parents.find((parent) => parent._id === parentId);
@@ -110,115 +119,160 @@ export default function CareTeam() {
 
   const openGoogleHospitals = () => {
     const locationText = locationInput.trim() || selectedParent?.location || "";
-    if (locationText) window.open(buildNearbyHospitalsUrl(locationText), "_blank", "noopener,noreferrer");
+    if (!locationText) return;
+
+    window.open(buildNearbyHospitalsUrl(locationText), "_blank", "noopener,noreferrer");
   };
+
+  useEffect(() => {
+    if (!selectedParent) return undefined;
+    const timer = setTimeout(loadHospitals, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedParent?._id]);
 
   const triggerHospitalDispatch = async () => {
     if (!dispatchHospital || !selectedParent) return;
+
     const parentLocationText = selectedParent.location || "the parent's current/saved location";
     const message = `Emergency SOS for ${selectedParent.name}. Please dispatch an ambulance to ${parentLocationText}. Parent phone: ${selectedParent.phone || "not available"}.`;
+
     try {
       await navigator.clipboard?.writeText(message);
     } catch {
-      // Clipboard may be blocked; message remains visible.
+      // Clipboard may be blocked; the message is still shown in the UI.
     }
-    setDispatchStatus(`SOS dispatch message prepared for ${dispatchHospital.name}.`);
-    if (dispatchHospital.phone) window.location.href = `tel:${dispatchHospital.phone}`;
-    else window.open(buildMapsUrl(dispatchHospital, parentLocationText), "_blank", "noopener,noreferrer");
-  };
 
-  const isFallback = !hospitals.length || hospitals.some(h => h.source === "Fallback");
-  const displayHospitals = hospitals.length ? hospitals : [
-    { id: "placeholder-1", name: "City Heart Multispecialty (Demo)", address: "Bengaluru", distanceKm: 0.8, emergency: "Emergency Care", rating: "4.9", phone: "", source: "Demo" },
-    { id: "placeholder-2", name: "Apollo Medical Centre (Demo)", address: "Indiranagar", distanceKm: 2.3, emergency: "General Practice", rating: "4.5", phone: "", source: "Demo" },
-    { id: "placeholder-3", name: "Cloudnine Hospitals (Demo)", address: "Jayanagar", distanceKm: 3.1, emergency: "Specialized Care", rating: "4.9", phone: "", source: "Demo" }
-  ];
+    setDispatchStatus(`SOS dispatch message prepared for ${dispatchHospital.name}.`);
+
+    if (dispatchHospital.phone) {
+      window.location.href = `tel:${dispatchHospital.phone}`;
+    } else {
+      window.open(buildMapsUrl(dispatchHospital, parentLocationText), "_blank", "noopener,noreferrer");
+    }
+  };
 
   return (
     <div className="app-layout">
       <Sidebar onSOSClick={() => setShowEmergency(true)} />
-      <main className="main-content care-shell">
-        <header className="topbar">
-          <div>
-            <button className="icon-btn" type="button" onClick={() => navigate(-1)} aria-label="Back">‹</button>
-            <Link className="icon-btn" to="/" aria-label="Home">⌂</Link>
-            <strong className="page-mini-title">Care Team</strong>
-          </div>
-          <span className="nearby-pill">{loadingHospitals ? "Searching nearby" : isFallback ? "Demo fallback data shown" : "Live hospitals found nearby"}</span>
-        </header>
 
-        <section className="care-controls">
+      <main className="main-content" id="care-team-page">
+        <div className="page-header animate-fade-in">
+          <div>
+            <span className="page-tag">Emergency Coordination</span>
+            <h1>Nearby Hospitals</h1>
+            <p className="page-subtitle">
+              Real hospital results are loaded from OpenStreetMap near the parent's saved location. Select a hospital to prepare an ambulance dispatch request.
+            </p>
+          </div>
+          <button className="btn btn-primary" id="refresh-hospitals-btn" onClick={loadHospitals} disabled={loadingHospitals || !selectedParent}>
+            {loadingHospitals ? "Finding..." : "Refresh Hospitals"}
+          </button>
+        </div>
+
+        <div className="hospital-controls card animate-fade-in">
           <label>
-            <span>Care Recipient</span>
+            <span>Parent location reference</span>
             <select value={selectedParent?._id || ""} onChange={(e) => selectParent(e.target.value)}>
-              {parents.map((parent) => <option key={parent._id} value={parent._id}>{parent.name}</option>)}
+              {parents.map((parent) => (
+                <option key={parent._id} value={parent._id}>
+                  {parent.name} {parent.location ? `- ${parent.location}` : "- browser location fallback"}
+                </option>
+              ))}
             </select>
           </label>
-          <label>
-            <span>Current Location / Address</span>
-            <input value={locationInput} onChange={(e) => setLocationInput(e.target.value)} placeholder="MG Road, Bangalore, KA" disabled={!selectedParent} />
-          </label>
-          <button className="btn btn-primary" type="button" onClick={openGoogleHospitals} disabled={!selectedParent || !locationInput.trim()}>Open Google Hospitals</button>
-        </section>
-
-        <section className="care-grid">
-          <div className="hospital-list-wrap">
-            <div className="section-row">
-              <h1>Nearby Hospitals</h1>
-              <div className="sort-pills"><button>Distance</button><button className="active">Rating</button></div>
-            </div>
-            <div className="hospital-list">
-              {displayHospitals.map((hospital, index) => (
-                <button className="hospital-card" key={hospital.id} onClick={() => setDispatchHospital(hospital)} type="button">
-                  <div className="hospital-photo">{index + 1}</div>
-                  <div>
-                    <h2>{hospital.name}</h2>
-                    <strong>{hospital.distanceKm?.toFixed ? hospital.distanceKm.toFixed(1) : hospital.distanceKm} km - {hospital.emergency || "Hospital Care"}</strong>
-                    <span>{hospital.address || "Address available on map"}</span>
-                    <small>Star {hospital.rating || "4.8"} / Open 24h</small>
-                  </div>
-                  <em>{hospital.source === "Fallback" || hospital.source === "Demo" || !hospitals.length ? "Demo Data" : "Live OSM"}</em>
-                </button>
-              ))}
-            </div>
-            {hospitalError && <p className="hospital-error">{hospitalError}</p>}
+          <div className="parent-location-form" key={selectedParent?._id || "no-parent"}>
+            <label>
+              <span>Parent Location</span>
+              <input
+                name="parentLocation"
+                type="text"
+                value={locationInput}
+                onChange={(e) => setLocationInput(e.target.value)}
+                placeholder="Example: Jayanagar, Bengaluru"
+                disabled={!selectedParent}
+              />
+            </label>
+            <button className="btn btn-primary" type="button" onClick={openGoogleHospitals} disabled={!selectedParent || !locationInput.trim()}>
+              Open Google Hospitals
+            </button>
           </div>
+          <p>
+            {selectedParent?.location
+              ? `Saved location: ${selectedParent.location}`
+              : "Add the parent's location to search hospitals near their real address."}
+            {locationInput.trim() && locationInput.trim() !== selectedParent?.location
+              ? ` Current search will use: ${locationInput.trim()}`
+              : ""}
+            {resolvedOrigin
+              ? ` Resolved map point: ${resolvedOrigin.label} (${resolvedOrigin.lat.toFixed(4)}, ${resolvedOrigin.lon.toFixed(4)}).`
+              : ""}
+          </p>
+        </div>
 
-          <aside className="care-side">
-            <div className="map-card">
-              <div className="map-tiles">
-                {Array.from({ length: 36 }).map((_, index) => <span key={index} />)}
+        <div className="team-grid hospital-grid">
+          {hospitals.map((hospital, i) => (
+            <button
+              key={hospital.id}
+              className="team-card hospital-card card animate-slide-up"
+              style={{ animationDelay: `${i * 0.05}s` }}
+              onClick={() => setDispatchHospital(hospital)}
+            >
+              <div className="team-card-header">
+                <div className="team-avatar hospital-avatar">
+                  ER
+                </div>
+                <span className="team-status online">
+                  {hospital.distanceKm.toFixed(1)} km
+                </span>
               </div>
-              <button className="map-plus" type="button" onClick={() => loadHospitals()}>+</button>
-              <button className="map-minus" type="button">-</button>
-              <div className="eta-card">
-                <span>AMB</span>
-                <strong>12 mins (Traffic: Low)</strong>
-                <small>{resolvedOrigin ? `${resolvedOrigin.label}` : "ETA to city center"}</small>
+              <h3 className="team-name">{hospital.name}</h3>
+              <p className="team-role">{hospital.address || "Address available on map"}</p>
+
+              <div className="team-details">
+                <div className="team-detail">
+                  <span className="td-label">Emergency</span>
+                  <span className="td-value">{hospital.emergency || "Hospital care"}</span>
+                </div>
+                <div className="team-detail">
+                  <span className="td-label">Phone</span>
+                  <span className="td-value">{hospital.phone || "Map contact"}</span>
+                </div>
               </div>
-            </div>
-            <div className="emergency-team-card">
-              <h3>Assigned Emergency Team</h3>
-              <TeamMember initials="JD" name="Dr. Jayesh Das" role="Primary On-Call" />
-              <TeamMember initials="RM" name="Ram Murthy" role="Ambulance Dispatch" />
-            </div>
-          </aside>
-        </section>
+
+              <div className="hospital-dispatch-btn">
+                Prepare Ambulance SOS
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {!loadingHospitals && !hospitalError && !hospitals.length && (
+          <div className="hospital-empty card animate-fade-in">
+            Select a parent and refresh to load nearby hospitals.
+          </div>
+        )}
       </main>
 
       {dispatchHospital && (
         <div className="modal-overlay">
-          <div className="hospital-dispatch-modal modal-container">
-            <div className="modal-header">
-              <h2>{dispatchHospital.name}</h2>
-              <button type="button" onClick={() => { setDispatchHospital(null); setDispatchStatus(""); }}>x</button>
+          <div className="hospital-dispatch-modal card animate-modal">
+            <span className="page-tag">Confirm SOS Dispatch</span>
+            <h2>{dispatchHospital.name}</h2>
+            <p>
+              Trigger an SOS request asking this hospital to dispatch an ambulance to {selectedParent?.name}'s location?
+            </p>
+            <div className="dispatch-message">
+              Emergency SOS for {selectedParent?.name}. Please dispatch an ambulance to {selectedParent?.location || "the parent's current/saved location"}.
             </div>
-            <p>Trigger an SOS request asking this hospital to dispatch an ambulance to {selectedParent?.name}'s location?</p>
-            <div className="dispatch-message">Emergency SOS for {selectedParent?.name}. Dispatch ambulance to {selectedParent?.location || "current/saved location"}.</div>
             {dispatchStatus && <div className="dispatch-status">{dispatchStatus}</div>}
             <div className="dispatch-actions">
-              <button className="btn btn-outline" onClick={() => setDispatchHospital(null)} type="button">Cancel</button>
-              <button className="btn btn-danger" onClick={triggerHospitalDispatch} type="button">Trigger SOS</button>
+              <button className="btn btn-outline" onClick={() => { setDispatchHospital(null); setDispatchStatus(""); }}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" onClick={triggerHospitalDispatch}>
+                Trigger SOS
+              </button>
             </div>
           </div>
         </div>
@@ -227,24 +281,9 @@ export default function CareTeam() {
       {showEmergency && (
         <EmergencyAlertModal
           onClose={() => setShowEmergency(false)}
-          onCallChild={() => setShowEmergency(false)}
-          childName={localStorage.getItem("userName") || "Caregiver"}
-          childPhone={localStorage.getItem("childPhone") || "Phone not added"}
+          onCallDispatch={() => { alert("Connecting..."); setShowEmergency(false); }}
         />
       )}
-    </div>
-  );
-}
-
-function TeamMember({ initials, name, role }) {
-  return (
-    <div className="team-member">
-      <span>{initials}</span>
-      <div>
-        <strong>{name}</strong>
-        <small>{role}</small>
-      </div>
-      <a href="tel:+91108">Call</a>
     </div>
   );
 }

@@ -1,19 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middleware/authMiddleware");
-const { authLimiter } = require("../middleware/rateLimitMiddleware");
 
 const { 
+    createUser, 
     getUsers, 
     registerUser, 
     loginUser 
 } = require("../controllers/userController");
 
-// 🔐 Auth routes (rate-limited against brute-force and spam)
-router.post("/register", authLimiter, registerUser);
-router.post("/login", authLimiter, loginUser);
+// existing routes
+router.post("/create", createUser);
+router.get("/all", getUsers);
 
-// 🛡️ Protected routes (requires valid caregiver/admin JWT)
-router.get("/all", protect, getUsers);
+// 🔐 new auth routes
+router.post("/register", registerUser);
+router.post("/login", loginUser);
 
 module.exports = router;

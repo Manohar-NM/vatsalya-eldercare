@@ -1,5 +1,4 @@
 const express = require("express");
-const { nearbyLimiter } = require("../middleware/rateLimitMiddleware");
 
 const router = express.Router();
 
@@ -53,7 +52,7 @@ const fallbackHospitals = [
   }
 ];
 
-router.get("/hospitals", nearbyLimiter, async (req, res) => {
+router.get("/hospitals", async (req, res) => {
   let origin = null;
 
   try {

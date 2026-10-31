@@ -1,6 +1,4 @@
 const Parent = require("../models/Parent");
-const Health = require("../models/Health");
-const { validateHealthMetrics } = require("./healthController");
 const crypto = require("crypto");
 
 // ========== CHILD (CAREGIVER) ACTIONS ==========
@@ -39,24 +37,7 @@ exports.getMyParents = async (req, res) => {
     try {
         const childId = req.user._id;
         const parents = await Parent.find({ child: childId });
-
-        // Ensure health metrics originate only from genuine Health collection records
-        const enriched = await Promise.all(
-            parents.map(async (parent) => {
-                const latestHealth = await Health.findOne({ parent: parent._id }).sort({ timestamp: -1 });
-                const obj = typeof parent.toObject === "function" ? parent.toObject() : { ...parent };
-
-                // If genuine health records exist, use latest measurements; otherwise null (unmeasured)
-                obj.heartRate = latestHealth?.heartRate ?? null;
-                obj.spO2 = latestHealth?.spO2 ?? null;
-                obj.bloodPressure = latestHealth?.bloodPressure ?? null;
-                obj.activity = latestHealth?.activity ?? null;
-                obj.latestHealthTimestamp = latestHealth?.timestamp ?? null;
-                return obj;
-            })
-        );
-
-        res.json(enriched);
+        res.json(parents);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -67,16 +48,7 @@ exports.getParentById = async (req, res) => {
     try {
         const parent = await Parent.findById(req.params.parentId);
         if (!parent) return res.status(404).json({ message: "Parent not found" });
-
-        const latestHealth = await Health.findOne({ parent: parent._id }).sort({ timestamp: -1 });
-        const obj = typeof parent.toObject === "function" ? parent.toObject() : { ...parent };
-        obj.heartRate = latestHealth?.heartRate ?? null;
-        obj.spO2 = latestHealth?.spO2 ?? null;
-        obj.bloodPressure = latestHealth?.bloodPressure ?? null;
-        obj.activity = latestHealth?.activity ?? null;
-        obj.latestHealthTimestamp = latestHealth?.timestamp ?? null;
-
-        res.json(obj);
+        res.json(parent);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -112,10 +84,6 @@ exports.addMedicine = async (req, res) => {
         const { parentId } = req.params;
         const { name, dosage, frequency } = req.body;
 
-        if (!name || typeof name !== "string" || !name.trim()) {
-            return res.status(400).json({ message: "Medicine name is required" });
-        }
-
         const parent = await Parent.findById(parentId);
         if (!parent) return res.status(404).json({ message: "Parent not found" });
 
@@ -124,20 +92,14 @@ exports.addMedicine = async (req, res) => {
             return res.status(403).json({ message: "Not authorized" });
         }
 
-        parent.medicines.push({
-            name: name.trim(),
-            dosage: typeof dosage === "string" ? dosage.trim() : "",
-            frequency: typeof frequency === "string" ? frequency.trim() : "Daily"
-        });
+        parent.medicines.push({ name, dosage, frequency });
         await parent.save();
 
         // Notify parent device via socket
         const io = req.app.get("io");
-        if (io) {
-            io.to(`parent_${parent._id}`).emit("MEDICINE_UPDATED", {
-                medicines: parent.medicines
-            });
-        }
+        io.to(`parent_${parent._id}`).emit("MEDICINE_UPDATED", {
+            medicines: parent.medicines
+        });
 
         res.json({
             message: "Medicine added",
@@ -164,14 +126,6 @@ exports.removeMedicine = async (req, res) => {
             m => m._id.toString() !== medicineId
         );
         await parent.save();
-
-        // Notify parent device via socket of removal
-        const io = req.app.get("io");
-        if (io) {
-            io.to(`parent_${parent._id}`).emit("MEDICINE_UPDATED", {
-                medicines: parent.medicines
-            });
-        }
 
         res.json({
             message: "Medicine removed",
@@ -391,44 +345,28 @@ exports.updateActivity = async (req, res) => {
     }
 };
 
-// UPDATE PARENT HEALTH DATA (authenticated device or caregiver)
+// UPDATE PARENT HEALTH DATA
 exports.updateHealth = async (req, res) => {
     try {
         const { parentId } = req.params;
-        const { heartRate, spO2, bloodPressure, activity } = req.body || {};
-
-        const validation = validateHealthMetrics({ heartRate, spO2, bloodPressure, activity });
-        if (validation.error) {
-            return res.status(400).json({ message: validation.error });
-        }
+        const { heartRate, spO2, bloodPressure, activity } = req.body;
 
         const parent = await Parent.findByIdAndUpdate(
             parentId,
-            validation.payload,
+            { heartRate, spO2, bloodPressure, activity },
             { new: true }
         );
 
         if (!parent) return res.status(404).json({ message: "Parent not found" });
 
-        // Preserve historical measurement in Health collection
-        const healthDoc = await Health.create({
-            parent: parent._id,
-            ...validation.payload,
-            recordedBy: req.authType || "parent_device",
-            timestamp: new Date()
+        // Notify child dashboard
+        const io = req.app.get("io");
+        io.to(parent.child.toString()).emit("HEALTH_UPDATE", {
+            parentId: parent._id,
+            heartRate, spO2, bloodPressure, activity
         });
 
-        // Notify child dashboard
-        const io = req.app?.get("io");
-        if (io) {
-            io.to(parent.child.toString()).emit("HEALTH_UPDATE", {
-                parentId: parent._id,
-                ...validation.payload,
-                timestamp: healthDoc.timestamp
-            });
-        }
-
-        res.json({ message: "Health data updated", parent, healthRecord: healthDoc });
+        res.json({ message: "Health data updated", parent });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

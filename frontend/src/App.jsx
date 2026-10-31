@@ -6,8 +6,6 @@ import HealthRecords from "./pages/HealthRecords";
 import CareTeam from "./pages/CareTeam";
 import Settings from "./pages/Settings";
 import ParentDevice from "./pages/ParentDevice";
-import CompanyPage from "./pages/CompanyPage";
-import SupportPage from "./pages/SupportPage";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
@@ -31,8 +29,6 @@ function App() {
 
         {/* Parent Device Route (no auth - uses unique code) */}
         <Route path="/parent" element={<ParentDevice />} />
-        <Route path="/company/:page" element={<CompanyPage />} />
-        <Route path="/support/:page" element={<SupportPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

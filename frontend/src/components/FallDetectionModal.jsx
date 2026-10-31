@@ -33,7 +33,7 @@ export default function FallDetectionModal({ onClose, onTriggerSOS, parentName }
           {/* Title */}
           <h2 className="fall-title">Possible Fall Detected</h2>
           <p className="fall-subtitle">
-            We detected a sudden impact at {parentName || "Parent"}&apos;s location.
+            We detected a sudden impact at {parentName || "Arthur"}'s location.
           </p>
 
           {/* Countdown Circle */}
@@ -80,9 +80,9 @@ export default function FallDetectionModal({ onClose, onTriggerSOS, parentName }
           {/* Patient Info */}
           <div className="fall-patient-info">
             <span className="info-dot"></span>
-            <span>Care Alert: {parentName || "Parent"}&apos;s Residence</span>
+            <span>Patient ID: {parentName || "Arthur"}'s Residence</span>
             <span className="info-separator">•</span>
-            <span>Real-time</span>
+            <span>2 min ago</span>
           </div>
         </div>
       </div>

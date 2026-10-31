@@ -472,7 +472,7 @@ export default function ParentDevice() {
 
   useEffect(() => {
     if (!parent) return;
-    socket.emit("joinRoom", { room: `parent_${parent._id}`, uniqueCode: parent.uniqueCode });
+    socket.emit("joinRoom", `parent_${parent._id}`);
 
     socket.on("MEDICINE_UPDATED", (data) => {
       setParent(prev => ({ ...prev, medicines: data.medicines }));
@@ -496,21 +496,10 @@ export default function ParentDevice() {
       });
     });
 
-    socket.on("SOS_RESOLVED", () => {
-      setSosTriggered(false);
-      setShowSOS(false);
-      setActiveReminder({
-        type: "Safe",
-        title: "SOS Alert Resolved",
-        message: "Your caregiver has confirmed they are handling the alert and marked it safe."
-      });
-    });
-
     return () => {
       socket.off("MEDICINE_UPDATED");
       socket.off("REMINDERS_UPDATED");
       socket.off("APPOINTMENTS_UPDATED");
-      socket.off("SOS_RESOLVED");
     };
   }, [parent]);
 

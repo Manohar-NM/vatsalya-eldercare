@@ -69,11 +69,11 @@ const parentSchema = new mongoose.Schema({
         createdAt: { type: Date, default: Date.now }
     }],
 
-    // Health data (null indicates no measurement has been recorded)
-    heartRate: { type: Number, default: null },
-    spO2: { type: Number, default: null },
-    bloodPressure: { type: String, default: null },
-    activity: { type: String, default: null }
+    // Health data
+    heartRate: { type: Number, default: 72 },
+    spO2: { type: Number, default: 98 },
+    bloodPressure: { type: String, default: "120/80" },
+    activity: { type: String, default: "Normal" }
 
 }, { timestamps: true });
 

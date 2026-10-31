@@ -1,14 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import API from "../services/api";
+import EmergencyAlertModal from "../components/EmergencyAlertModal";
 import "./Settings.css";
 
-const languages = ["English", "Hindi", "Kannada", "Tamil", "Telugu", "Malayalam"];
-const defaultSettings = { language: "English", healthAlerts: true, medReminders: true, activityReports: false, contacts: [] };
+const languages = [
+  { code: "en", label: "English", script: "Aa" },
+  { code: "hi", label: "Hindi", script: "अ" },
+  { code: "kn", label: "Kannada", script: "ಅ" },
+  { code: "ta", label: "Tamil", script: "அ" },
+  { code: "te", label: "Telugu", script: "అ" },
+  { code: "ml", label: "Malayalam", script: "അ" }
+];
+
+const defaultSettings = {
+  language: "English",
+  healthAlerts: true,
+  medReminders: true,
+  activityReports: false,
+  contacts: []
+};
 
 export default function Settings() {
-  const navigate = useNavigate();
+  const [showEmergency, setShowEmergency] = useState(false);
   const [parents, setParents] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState("");
   const [settings, setSettings] = useState(() => {
@@ -22,9 +36,13 @@ export default function Settings() {
   const [profileForm, setProfileForm] = useState({ name: "", age: "", phone: "", conditions: "", bloodType: "O+", location: "" });
   const [toast, setToast] = useState("");
 
-  const childName = localStorage.getItem("userName") || "Ananya Vatsalya";
-  const childEmail = localStorage.getItem("userEmail") || "ananya.v@healthmail.com";
-  const selectedParent = useMemo(() => parents.find((parent) => parent._id === selectedParentId) || parents[0] || null, [parents, selectedParentId]);
+  const childName = localStorage.getItem("userName") || "Caregiver";
+  const childEmail = localStorage.getItem("userEmail") || "";
+
+  const selectedParent = useMemo(
+    () => parents.find((parent) => parent._id === selectedParentId) || parents[0] || null,
+    [parents, selectedParentId]
+  );
 
   useEffect(() => {
     API.get("/parents/my-parents")
@@ -41,15 +59,24 @@ export default function Settings() {
   }, [settings]);
 
   const parentContacts = useMemo(() => {
-    const connected = selectedParent ? [{
+    const connectedParentContact = selectedParent ? [{
       id: `parent-${selectedParent._id}`,
       name: selectedParent.name,
-      relation: "Family physician",
+      relation: "Connected Parent",
       phone: selectedParent.phone || "Phone not added",
       initials: getInitials(selectedParent.name),
+      color: "#1a3c5e",
       locked: true
     }] : [];
-    return [...connected, ...settings.contacts.map((contact) => ({ ...contact, initials: getInitials(contact.name) }))];
+
+    return [
+      ...connectedParentContact,
+      ...settings.contacts.map((contact) => ({
+        ...contact,
+        initials: getInitials(contact.name),
+        color: "#3b82f6"
+      }))
+    ];
   }, [selectedParent, settings.contacts]);
 
   const updateSetting = (key, value) => {
@@ -81,7 +108,9 @@ export default function Settings() {
       relation: contactForm.relation.trim(),
       phone: contactForm.phone.trim()
     };
+
     if (!contact.name || !contact.phone) return;
+
     setSettings((prev) => ({
       ...prev,
       contacts: editingContactId
@@ -108,6 +137,7 @@ export default function Settings() {
   const saveParentProfile = async (event) => {
     event.preventDefault();
     if (!selectedParent) return;
+
     const profilePayload = {
       name: profileForm.name.trim(),
       age: Number(profileForm.age) || "",
@@ -116,6 +146,7 @@ export default function Settings() {
       bloodType: profileForm.bloodType,
       location: profileForm.location.trim()
     };
+
     try {
       const res = await API.put(`/parents/${selectedParent._id}`, profilePayload);
       const updatedParent = res.data.parent;
@@ -128,140 +159,209 @@ export default function Settings() {
   };
 
   const reviewPermissions = () => {
-    alert(`Permissions for ${selectedParent?.name || "connected parent"}\nHealth alerts: ${settings.healthAlerts ? "On" : "Off"}\nMedication reminders: ${settings.medReminders ? "On" : "Off"}\nActivity reports: ${settings.activityReports ? "On" : "Off"}`);
+    alert(`Permissions are active for ${selectedParent?.name || "the connected parent"}.\n\nNotifications: ${settings.healthAlerts ? "On" : "Off"}\nMedication reminders: ${settings.medReminders ? "On" : "Off"}\nActivity reports: ${settings.activityReports ? "On" : "Off"}`);
   };
+
+  const avatarInitials = getInitials(selectedParent?.name || childName);
 
   return (
     <div className="app-layout">
-      <Sidebar />
-      <main className="main-content settings-shell">
-        <header className="topbar">
+      <Sidebar onSOSClick={() => setShowEmergency(true)} />
+
+      <main className="main-content" id="settings-page">
+        <div className="page-header animate-fade-in">
           <div>
-            <button className="icon-btn" type="button" onClick={() => navigate(-1)} aria-label="Back">‹</button>
-            <Link className="icon-btn" to="/" aria-label="Home">⌂</Link>
-            <strong className="page-mini-title">Settings</strong>
+            <h1>Account Settings</h1>
+            <p className="page-subtitle">
+              Settings are connected to the selected parent under {childName}'s caregiver account.
+            </p>
           </div>
-          <button className="btn btn-primary compact" type="button" onClick={() => navigate("/dashboard")}>Add Parent</button>
-        </header>
+        </div>
 
-        {toast && <div className="settings-toast" onAnimationEnd={() => setToast("")}>{toast}</div>}
+        {toast && (
+          <div className="settings-toast" onAnimationEnd={() => setToast("")}>
+            {toast}
+          </div>
+        )}
 
-        <section className="settings-grid">
+        <div className="settings-layout">
           <div className="settings-main">
-            <article className="settings-card">
-              <h2>Connected Parent</h2>
-              <select value={selectedParent?._id || ""} onChange={(event) => setSelectedParentId(event.target.value)}>
-                {parents.map((parent) => <option key={parent._id} value={parent._id}>{parent.name} (ID: {parent.uniqueCode})</option>)}
+            <div className="settings-section card animate-slide-up" style={{ animationDelay: "0.05s" }}>
+              <div className="section-header">
+                <div className="section-icon" style={{ background: "var(--info-bg)" }}>ID</div>
+                <div>
+                  <h3>Connected Parent</h3>
+                  <p>Choose which parent these settings should apply to.</p>
+                </div>
+              </div>
+              <select className="parent-select" value={selectedParent?._id || ""} onChange={(e) => setSelectedParentId(e.target.value)}>
+                {parents.map((parent) => (
+                  <option key={parent._id} value={parent._id}>
+                    {parent.name} - {parent.uniqueCode}
+                  </option>
+                ))}
               </select>
-            </article>
+            </div>
 
-            <article className="settings-card">
-              <h2>Preferred Language</h2>
-              <div className="language-row">
-                {languages.map((language) => (
-                  <button key={language} className={settings.language === language ? "active" : ""} onClick={() => updateSetting("language", language)} type="button">{language}</button>
+            <div className="settings-section card animate-slide-up" style={{ animationDelay: "0.1s" }}>
+              <div className="section-header">
+                <div className="section-icon" style={{ background: "var(--info-bg)" }}>Lang</div>
+                <div>
+                  <h3>Preferred Language</h3>
+                  <p>Choose the language for alerts and interface.</p>
+                </div>
+              </div>
+              <div className="language-grid">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    className={`lang-btn ${settings.language === lang.label ? "active" : ""}`}
+                    onClick={() => updateSetting("language", lang.label)}
+                    id={`lang-${lang.code}`}
+                  >
+                    <span className="lang-script">{lang.script}</span>
+                    <span className="lang-label">{lang.label}</span>
+                    {settings.language === lang.label && <span className="lang-check">✓</span>}
+                  </button>
                 ))}
               </div>
-            </article>
-          </div>
+            </div>
 
-          <div className="settings-secondary">
-            <article className="settings-card">
-              <h2>Notifications & Alerts</h2>
-              <NotificationToggle title="Health Alerts" desc="Realtime notification for abnormal vitals" checked={settings.healthAlerts} onChange={() => updateSetting("healthAlerts", !settings.healthAlerts)} />
-              <NotificationToggle title="Medication Reminders" desc="Timely prompts for daily pill intake" checked={settings.medReminders} onChange={() => updateSetting("medReminders", !settings.medReminders)} />
-              <NotificationToggle title="Activity Reports" desc="Weekly digest of health and movement trends" checked={settings.activityReports} onChange={() => updateSetting("activityReports", !settings.activityReports)} />
-            </article>
-
-            <article className="settings-card">
-              <div className="settings-card-head">
-                <h2>Emergency Contacts</h2>
-                <button type="button" onClick={openAddContact}>Add New</button>
+            <div className="settings-section card animate-slide-up" style={{ animationDelay: "0.2s" }}>
+              <div className="section-header">
+                <div className="section-icon" style={{ background: "var(--warning-bg)" }}>Bell</div>
+                <div>
+                  <h3>Notifications</h3>
+                  <p>Control how you receive updates for {selectedParent?.name || "the selected parent"}.</p>
+                </div>
               </div>
-              <div className="contacts-list">
+              <div className="notification-list">
+                <NotificationToggle
+                  title="Health Alerts"
+                  desc="Enable alerts for critical health events."
+                  checked={settings.healthAlerts}
+                  onChange={() => updateSetting("healthAlerts", !settings.healthAlerts)}
+                />
+                <NotificationToggle
+                  title="Medication Reminders"
+                  desc="Schedule notifications for daily doses."
+                  checked={settings.medReminders}
+                  onChange={() => updateSetting("medReminders", !settings.medReminders)}
+                />
+                <NotificationToggle
+                  title="Activity Reports"
+                  desc="Weekly digest of health summaries."
+                  checked={settings.activityReports}
+                  onChange={() => updateSetting("activityReports", !settings.activityReports)}
+                />
+              </div>
+            </div>
+
+            <div className="settings-section card animate-slide-up" style={{ animationDelay: "0.3s" }}>
+              <div className="section-header">
+                <div className="section-icon" style={{ background: "var(--danger-bg)" }}>SOS</div>
+                <div>
+                  <h3>Emergency Contacts</h3>
+                  <p>Connected parent and custom contacts for emergency follow-up.</p>
+                </div>
+                <button className="btn btn-outline add-contact-btn" id="add-contact-btn" onClick={openAddContact}>+ Add New</button>
+              </div>
+              <div className="contacts-grid">
                 {parentContacts.map((contact) => (
-                  <div className="contact-row" key={contact.id}>
-                    <span>{contact.initials}</span>
-                    <div>
-                      <strong>{contact.name}</strong>
-                      <small>{contact.relation} / {contact.phone}</small>
+                  <div key={contact.id} className="contact-card">
+                    <div className="contact-avatar" style={{ background: contact.color }}>
+                      {contact.initials}
                     </div>
-                    <button type="button" onClick={() => openEditContact(contact)}>Edit</button>
+                    <div className="contact-info">
+                      <span className="contact-name">{contact.name}</span>
+                      <span className="contact-relation">{contact.relation}</span>
+                      <span className="contact-phone">{contact.phone}</span>
+                    </div>
+                    <button className="contact-edit" onClick={() => openEditContact(contact)}>Edit</button>
                   </div>
                 ))}
               </div>
-            </article>
+            </div>
 
-            <article className="privacy-row">
-              <div>
-                <strong>Security & Privacy</strong>
-                <small>Manage app permissions and biometric locks.</small>
+            <div className="settings-section card animate-slide-up" style={{ animationDelay: "0.4s" }}>
+              <div className="section-header">
+                <div className="section-icon" style={{ background: "var(--success-bg)" }}>Lock</div>
+                <div>
+                  <h3>Security & Data Privacy</h3>
+                  <p>Review current permission status for this caregiver account.</p>
+                </div>
+                <button className="btn btn-primary" id="review-permissions-btn" onClick={reviewPermissions}>Review Permissions</button>
               </div>
-              <button className="btn btn-outline" type="button" onClick={reviewPermissions}>Review Permissions</button>
-            </article>
+            </div>
           </div>
 
-          <aside className="settings-aside">
-            <article className="profile-panel">
-              <div className="profile-photo">{getInitials(selectedParent?.name || childName)}</div>
-              <h1>{selectedParent?.name || childName}</h1>
-              <p>Caregiver ID: CG-8802</p>
-              <dl>
-                <dt>Parent ID</dt>
-                <dd>{selectedParent?.uniqueCode || "Not linked"}</dd>
-                <dt>Linked Email</dt>
-                <dd>{childEmail}</dd>
-              </dl>
-              <button type="button" onClick={openProfileEditor} disabled={!selectedParent}>Edit Profile</button>
-            </article>
-
-            <article className="support-panel">
-              <strong>Need assistance?</strong>
-              <span>Our support team is available 24/7 for app-related technical issues.</span>
-              <a href="mailto:support@vatsalya.care">Contact Support</a>
-            </article>
-
-            <article className="device-status-panel">
-              <div className="device-status-head">
-                <strong>Parent Device</strong>
-                <span>{selectedParent ? "Ready" : "Not linked"}</span>
+          <div className="settings-profile animate-slide-right">
+            <div className="profile-card-settings card">
+              <div className="profile-image-wrapper">
+                <div className="profile-image-placeholder">
+                  <span>{avatarInitials}</span>
+                </div>
               </div>
-              <div className="device-code-box">
-                <small>Activation Code</small>
-                <b>{selectedParent?.uniqueCode || "No Code"}</b>
-              </div>
-              <DeviceCheck done={Boolean(selectedParent)} text="Parent profile linked" />
-              <DeviceCheck done={settings.medReminders} text="Medicine reminders enabled" />
-              <DeviceCheck done={settings.healthAlerts} text="Emergency alerts enabled" />
-              <DeviceCheck done={Boolean(selectedParent?.location)} text="Location saved" />
-            </article>
-          </aside>
-        </section>
+              <h3 className="profile-settings-name">{selectedParent?.name || "No parent connected"}</h3>
+              <p className="profile-settings-id">
+                Parent ID: {selectedParent?.uniqueCode || "Not available"}
+              </p>
+              <p className="profile-settings-id">
+                Child: {childName}{childEmail ? ` (${childEmail})` : ""}
+              </p>
+              <button className="btn btn-outline edit-profile-btn" id="edit-profile-btn" onClick={openProfileEditor} disabled={!selectedParent}>Edit Profile</button>
+            </div>
+          </div>
+        </div>
       </main>
 
       {showContactForm && (
-        <Modal title={editingContactId ? "Edit Contact" : "Add Emergency Contact"} onClose={() => setShowContactForm(false)}>
-          <form onSubmit={saveContact} className="settings-form">
-            <label>Name<input value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })} required /></label>
-            <label>Relation<input value={contactForm.relation} onChange={(e) => setContactForm({ ...contactForm, relation: e.target.value })} required /></label>
-            <label>Phone<input value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} required /></label>
-            <button className="btn btn-primary" type="submit">Save Contact</button>
-          </form>
-        </Modal>
+        <div className="modal-overlay">
+          <div className="settings-modal card animate-modal">
+            <h2>{editingContactId ? "Edit Contact" : "Add Emergency Contact"}</h2>
+            <form onSubmit={saveContact} className="settings-form">
+              <label>Name<input value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })} required /></label>
+              <label>Relation<input value={contactForm.relation} onChange={(e) => setContactForm({ ...contactForm, relation: e.target.value })} required /></label>
+              <label>Phone<input value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} required /></label>
+              <div className="settings-modal-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setShowContactForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Contact</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {showProfileForm && (
-        <Modal title="Edit Parent Profile" onClose={() => setShowProfileForm(false)}>
-          <form onSubmit={saveParentProfile} className="settings-form">
-            <label>Name<input value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} required /></label>
-            <label>Age<input type="number" value={profileForm.age} onChange={(e) => setProfileForm({ ...profileForm, age: e.target.value })} /></label>
-            <label>Phone<input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} /></label>
-            <label>Conditions<input value={profileForm.conditions} onChange={(e) => setProfileForm({ ...profileForm, conditions: e.target.value })} /></label>
-            <label>Location<input value={profileForm.location} onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })} /></label>
-            <label>Blood Type<select value={profileForm.bloodType} onChange={(e) => setProfileForm({ ...profileForm, bloodType: e.target.value })}><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option></select></label>
-            <button className="btn btn-primary" type="submit">Save Profile</button>
-          </form>
-        </Modal>
+        <div className="modal-overlay">
+          <div className="settings-modal card animate-modal">
+            <h2>Edit Parent Profile</h2>
+            <form onSubmit={saveParentProfile} className="settings-form">
+              <label>Name<input value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} required /></label>
+              <label>Age<input type="number" value={profileForm.age} onChange={(e) => setProfileForm({ ...profileForm, age: e.target.value })} /></label>
+              <label>Phone<input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} /></label>
+              <label>Conditions<input value={profileForm.conditions} onChange={(e) => setProfileForm({ ...profileForm, conditions: e.target.value })} /></label>
+              <label>Location<input value={profileForm.location} onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })} placeholder="e.g. Bengaluru, Karnataka" /></label>
+              <label>Blood Type
+                <select value={profileForm.bloodType} onChange={(e) => setProfileForm({ ...profileForm, bloodType: e.target.value })}>
+                  <option>O+</option><option>O-</option><option>A+</option><option>A-</option>
+                  <option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
+                </select>
+              </label>
+              <div className="settings-modal-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setShowProfileForm(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEmergency && (
+        <EmergencyAlertModal
+          onClose={() => setShowEmergency(false)}
+          onCallDispatch={() => { alert("Connecting..."); setShowEmergency(false); }}
+        />
       )}
     </div>
   );
@@ -270,41 +370,24 @@ export default function Settings() {
 function NotificationToggle({ title, desc, checked, onChange }) {
   return (
     <div className="notif-item">
-      <div>
-        <strong>{title}</strong>
-        <small>{desc}</small>
+      <div className="notif-info">
+        <span className="notif-title">{title}</span>
+        <span className="notif-desc">{desc}</span>
       </div>
       <label className="toggle">
         <input type="checkbox" checked={checked} onChange={onChange} />
-        <span />
+        <span className="toggle-slider"></span>
       </label>
     </div>
   );
 }
 
-function Modal({ title, onClose, children }) {
-  return (
-    <div className="modal-overlay">
-      <div className="modal-container">
-        <div className="modal-header">
-          <h2>{title}</h2>
-          <button type="button" onClick={onClose}>x</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 function getInitials(name) {
-  return String(name || "?").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-}
-
-function DeviceCheck({ done, text }) {
-  return (
-    <div className={`device-check ${done ? "done" : ""}`}>
-      <span>{done ? "OK" : "--"}</span>
-      <strong>{text}</strong>
-    </div>
-  );
+  return String(name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
